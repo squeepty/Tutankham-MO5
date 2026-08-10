@@ -36,7 +36,7 @@ DrawTitleScreen:
         ldb     #2
         jsr     DrawCellPattern
         ldu     #CellTreasure
-        lda     #28
+        lda     #27
         ldb     #2
         jsr     DrawCellPattern
 
@@ -363,8 +363,24 @@ DrawLevelIntroScreen:
         lda     #14
         ldb     #12
         jsr     DrawString
-        ldu     #LevelIntroEscapeText
+        ldb     CurrentLevel
+        ldx     #StageRoomCounts
+        lda     b,x
+        cmpa    #1
+        beq     DrawLevelIntroOneRoom
+        cmpa    #2
+        beq     DrawLevelIntroTwoRooms
+        ldu     #LevelIntroThreeRoomsText
         lda     #11
+        bra     DrawLevelIntroRoomCount
+DrawLevelIntroOneRoom:
+        ldu     #LevelIntroOneRoomText
+        lda     #12
+        bra     DrawLevelIntroRoomCount
+DrawLevelIntroTwoRooms:
+        ldu     #LevelIntroTwoRoomsText
+        lda     #12
+DrawLevelIntroRoomCount:
         ldb     #15
         jsr     DrawString
         lda     #COLOR_KEY

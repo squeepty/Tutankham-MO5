@@ -52,7 +52,13 @@ LevelIntroTitleText:
 LevelIntroGoalText:
         fcc     "FIND THE KEY"
         fcb     0
-LevelIntroEscapeText:
+LevelIntroOneRoomText:
+        fcc     "ONE ROOM AWAITS"
+        fcb     0
+LevelIntroTwoRoomsText:
+        fcc     "TWO ROOMS AWAIT"
+        fcb     0
+LevelIntroThreeRoomsText:
         fcc     "THREE ROOMS AWAIT"
         fcb     0
 CompleteScreenTitleText:
