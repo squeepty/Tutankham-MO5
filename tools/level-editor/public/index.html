@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#17160f">
+    <title>Tutankham Maze Workshop</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand-lockup">
+          <div class="brand-mark" aria-hidden="true"><span></span></div>
+          <div>
+            <p class="eyebrow">Tutankham · MO5</p>
+            <h1>Maze Workshop</h1>
+          </div>
+        </div>
+
+        <div class="document-state">
+          <span class="status-dot" id="connectionDot"></span>
+          <span id="documentStatus">Opening the chamber…</span>
+        </div>
+
+        <div class="top-actions">
+          <button class="button ghost" id="exportButton" type="button">Export draft</button>
+          <label class="button ghost file-button" for="importInput">Import draft</label>
+          <input id="importInput" type="file" accept="application/json,.json" hidden>
+          <button class="button secondary" id="validateButton" type="button">Validate</button>
+          <button class="button primary" id="saveButton" type="button">Save to source</button>
+        </div>
+      </header>
+
+      <main class="editor-layout" aria-busy="true" id="editorLayout">
+        <aside class="left-rail panel">
+          <section class="rail-section room-picker">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Campaign</p>
+                <h2>Choose a room</h2>
+              </div>
+              <span class="room-count">21</span>
+            </div>
+            <div class="stage-list" id="stageList" aria-label="Stages"></div>
+            <div class="room-tabs" id="roomTabs" aria-label="Rooms"></div>
+          </section>
+
+          <section class="rail-section tools-section">
+            <div class="section-heading compact">
+              <div>
+                <p class="eyebrow">Palette</p>
+                <h2>Paint & place</h2>
+              </div>
+              <kbd id="activeShortcut">1</kbd>
+            </div>
+
+            <div class="tool-group">
+              <p class="tool-group-label">Edit</p>
+              <div class="tool-grid">
+                <button class="tool-button" data-tool="move" type="button" title="Move an object (M)">
+                  <span class="tool-icon move-icon">✣</span><span>Move</span><small>M</small>
+                </button>
+                <button class="tool-button active" data-tool="wall" type="button" title="Paint wall (1)">
+                  <span class="tool-icon wall-icon"></span><span>Wall</span><small>1</small>
+                </button>
+                <button class="tool-button" data-tool="floor" type="button" title="Erase to floor (2)">
+                  <span class="tool-icon floor-icon"></span><span>Floor</span><small>2</small>
+                </button>
+              </div>
+            </div>
+
+            <div class="tool-group">
+              <p class="tool-group-label">Collectibles</p>
+              <div class="tool-grid">
+                <button class="tool-button" data-tool="treasure" type="button" title="Place treasure (T)">
+                  <span class="tool-icon treasure-icon">◆</span><span>Treasure</span><small>T</small>
+                </button>
+                <button class="tool-button" data-tool="key" type="button" title="Place key (K)">
+                  <span class="tool-icon key-icon">⚿</span><span>Key</span><small>K</small>
+                </button>
+              </div>
+            </div>
+
+            <div class="tool-group">
+              <p class="tool-group-label">Room objects</p>
+              <div class="tool-grid">
+                <button class="tool-button" data-tool="spawner" type="button" title="Place guardian nest (S)">
+                  <span class="tool-icon spawn-icon">✹</span><span>Spawner</span><small>S</small>
+                </button>
+                <button class="tool-button" data-tool="warpDown" type="button" title="Place downward warp (V)">
+                  <span class="tool-icon warp-icon">↓</span><span>Warp down</span><small>V</small>
+                </button>
+                <button class="tool-button" data-tool="warpUp" type="button" title="Place upward warp (A)">
+                  <span class="tool-icon warp-icon">↑</span><span>Warp up</span><small>A</small>
+                </button>
+                <button class="tool-button" data-tool="exit" type="button" title="Place the room or stage exit (E)">
+                  <span class="tool-icon exit-icon">⇥</span><span>Exit</span><small>E</small>
+                </button>
+                <button class="tool-button" data-tool="start" type="button" title="Place player start (P)">
+                  <span class="tool-icon player-icon">♟</span><span>Start point</span><small>P</small>
+                </button>
+              </div>
+            </div>
+
+            <label class="toggle-row" for="pairRows">
+              <span>
+                <strong>Double terrain rows</strong>
+                <small>Keep the MO5 logical maze aligned</small>
+              </span>
+              <input id="pairRows" type="checkbox" checked>
+              <span class="toggle" aria-hidden="true"></span>
+            </label>
+          </section>
+
+          <section class="rail-section history-actions">
+            <button class="icon-button" id="undoButton" type="button" disabled><span>↶</span> Undo</button>
+            <button class="icon-button" id="redoButton" type="button" disabled><span>↷</span> Redo</button>
+            <button class="icon-button danger" id="resetRoomButton" type="button"><span>↺</span> Reset room</button>
+          </section>
+        </aside>
+
+        <section class="canvas-column">
+          <div class="canvas-card panel">
+            <div class="canvas-header">
+              <div>
+                <p class="eyebrow" id="roomBreadcrumb">Stage — · Room —</p>
+                <h2 id="roomTitle">Loading room…</h2>
+              </div>
+              <div class="canvas-meta">
+                <span class="coordinate-readout" id="coordinateReadout">x — · y —</span>
+                <span class="size-badge">30 × 22</span>
+              </div>
+            </div>
+            <div class="canvas-scroll" id="canvasScroll">
+              <canvas id="mazeCanvas" width="960" height="704" aria-label="Editable 30 by 22 room grid"></canvas>
+              <div class="canvas-empty" id="canvasEmpty">
+                <span class="loader"></span>
+                <p>Unsealing the level data…</p>
+              </div>
+            </div>
+            <div class="canvas-footer">
+              <div class="legend">
+                <span><i class="legend-cell upper"></i> upper physical row</span>
+                <span><i class="legend-cell lower"></i> paired lower row</span>
+              </div>
+              <p id="toolHint">Drag to paint walls. Right-click to erase.</p>
+            </div>
+          </div>
+
+          <div class="validation-panel panel" id="validationPanel">
+            <div class="validation-icon" id="validationIcon">i</div>
+            <div>
+              <p class="eyebrow">Source validator</p>
+              <strong id="validationTitle">Not checked yet</strong>
+              <p id="validationMessage">Run validation to check reachability, pacing, spacing, and maze topology.</p>
+            </div>
+          </div>
+        </section>
+
+        <aside class="right-rail panel">
+          <section class="inspector-section">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Room health</p>
+                <h2>Content checks</h2>
+              </div>
+              <span class="health-badge" id="healthBadge">—</span>
+            </div>
+            <div class="check-list" id="checkList"></div>
+          </section>
+
+          <section class="inspector-section objects-section">
+            <div class="section-heading compact">
+              <div>
+                <p class="eyebrow">Inspector</p>
+                <h2>Placed objects</h2>
+              </div>
+            </div>
+            <p class="inspector-help">Choose an object, then click its new cell in the maze.</p>
+            <div class="object-list" id="objectList"></div>
+          </section>
+
+          <section class="inspector-section source-section">
+            <p class="eyebrow">Source target</p>
+            <code id="sourcePath">src/game/data.asm</code>
+            <p>Saving is atomic and only succeeds after the game’s full content validator passes.</p>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <div class="toast-region" id="toastRegion" aria-live="polite"></div>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
