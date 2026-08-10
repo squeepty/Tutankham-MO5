@@ -32,7 +32,7 @@ if (!sourcePath) {
 const source = fs.readFileSync(sourcePath, "utf8");
 const minimumTreasureSeparation = 10;
 const minimumKeyTreasureSeparation = 10;
-const enemyCount = 3;
+const enemySpawnCount = 3;
 const mazeMinimumGateTurns = 7;
 const mazeMinimumGateBranchCells = 5;
 const mazeMinimumCycles = 12;
@@ -154,8 +154,8 @@ for (const [label, values] of [
   ["EnemyInitialAnimationFrame", enemyFrame],
 ]) {
   assert(
-    values.length === totalRoomCount * enemyCount,
-    `${label} must contain ${totalRoomCount * enemyCount} entries`,
+    values.length === totalRoomCount * enemySpawnCount,
+    `${label} must contain ${totalRoomCount * enemySpawnCount} entries`,
   );
 }
 assert(
@@ -799,11 +799,11 @@ maps.forEach((rows, roomIndex) => {
       );
     }
   }
-  for (let actor = 0; actor < enemyCount; actor += 1) {
-    const tableIndex = roomIndex * enemyCount + actor;
+  for (let spawnIndex = 0; spawnIndex < enemySpawnCount; spawnIndex += 1) {
+    const tableIndex = roomIndex * enemySpawnCount + spawnIndex;
     assert(
       rows[enemyY[tableIndex]][enemyX[tableIndex]] === "S",
-      `${name} enemy ${actor} does not start on a nest`,
+      `${name} guardian spawn ${spawnIndex} does not start on a nest`,
     );
   }
 
@@ -854,7 +854,7 @@ maps.forEach((rows, roomIndex) => {
 
 console.log(
   `Validated ${stageCount} stages, ${totalRoomCount} rooms, and ${
-    totalRoomCount * enemyCount
+    totalRoomCount * enemySpawnCount
   } guardian starts; arcade imports and reference rooms preserved, with ` +
     `generated-maze quality checked in the final ${totalRoomCount - 9} rooms`,
 );

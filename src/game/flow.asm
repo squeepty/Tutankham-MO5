@@ -140,7 +140,7 @@ LoadCurrentRoomMap:
         sta     CurrentWallColor
 
         lda     CurrentStageRoomIndex
-        ldb     #ENEMY_COUNT
+        ldb     #ENEMY_SPAWN_COUNT
         mul
         stb     CurrentRoomEnemyOffset
 
@@ -190,6 +190,40 @@ SetPlayerAtCurrentRoomStart:
 ;------------------------------------------------------------------------------
 ; Per-frame dispatcher
 ;------------------------------------------------------------------------------
+; Use the historical delay in presentation states and while the original three
+; guardian slots are the only active workload. Each additional active snake
+; removes about 1,600 cycles of otherwise idle delay, keeping real-time motion
+; near the established cadence without changing any per-frame movement values.
+WaitMainLoopFrame:
+        ldx     #FRAME_DELAY_ITERATIONS
+        lda     GameState
+        bne     WaitMainLoopFrameLoop
+
+        ; Count live slots rather than checking fixed indices: a destroyed
+        ; original snake must not leave the frame over-compensated while a
+        ; later slot remains active.
+        ldy     #EnemyActive
+        clrb
+        lda     #ENEMY_COUNT
+WaitMainLoopFrameCountEnemy:
+        tst     ,y+
+        beq     WaitMainLoopFrameCountNext
+        incb
+WaitMainLoopFrameCountNext:
+        deca
+        bne     WaitMainLoopFrameCountEnemy
+        cmpb    #ENEMY_SPAWN_COUNT
+        bls     WaitMainLoopFrameLoop
+        subb    #ENEMY_SPAWN_COUNT
+WaitMainLoopFrameCompensate:
+        leax    -FRAME_DELAY_EXTRA_ENEMY_ITERATIONS,x
+        decb
+        bne     WaitMainLoopFrameCompensate
+WaitMainLoopFrameLoop:
+        leax    -1,x
+        bne     WaitMainLoopFrameLoop
+        rts
+
 RunGameFrame:
         jsr     UpdatePlayerFireAnimation
         jsr     ReadInput
@@ -2073,8 +2107,8 @@ UpdateCurrentEnemyRespawn:
         rts
 TryRespawnCurrentEnemy:
         ; Do not materialize on top of the explorer or another live guardian.
-        ldb     CurrentActorIndex
-        addb    CurrentRoomEnemyOffset
+        jsr     SetCurrentEnemyTableIndex
+        ldb     CurrentRoomEnemyTableIndex
         ldx     #EnemyInitialX
         lda     b,x
         sta     CandidateX
@@ -2533,8 +2567,9 @@ RespawnPlayer:
         rts
 
 ResetEnemies:
-        ; First guardian appears immediately; the remaining two begin inactive
-        ; with staggered initial respawn timers.
+        ; First guardian appears immediately; the remaining four begin inactive
+        ; with staggered initial respawn timers. Slots four and five reuse the
+        ; first and second physical nests after those cells become clear.
         clr     CurrentActorIndex
 ResetEnemiesNext:
         ldb     CurrentActorIndex
@@ -2558,9 +2593,8 @@ ResetEnemiesDone:
         rts
 
 InitializeCurrentEnemyAtSpawn:
-        ldb     CurrentActorIndex
-        addb    CurrentRoomEnemyOffset
-        stb     CurrentRoomEnemyTableIndex
+        jsr     SetCurrentEnemyTableIndex
+        ldb     CurrentRoomEnemyTableIndex
         ldx     #EnemyInitialX
         lda     b,x
         ldb     CurrentActorIndex
@@ -2633,6 +2667,21 @@ InitializeCurrentEnemyMoveDirection:
         ldx     #EnemyActive
         lda     #1
         sta     b,x
+        rts
+
+; Map five runtime slots onto the room's three physical nest records. Reusing
+; nests is safe because TryRespawnCurrentEnemy delays emergence while another
+; guardian still occupies or targets that cell.
+SetCurrentEnemyTableIndex:
+        ldb     CurrentActorIndex
+SetCurrentEnemyTableIndexReduce:
+        cmpb    #ENEMY_SPAWN_COUNT
+        blo     SetCurrentEnemyTableIndexAddRoom
+        subb    #ENEMY_SPAWN_COUNT
+        bra     SetCurrentEnemyTableIndexReduce
+SetCurrentEnemyTableIndexAddRoom:
+        addb    CurrentRoomEnemyOffset
+        stb     CurrentRoomEnemyTableIndex
         rts
 
 ClearShots:

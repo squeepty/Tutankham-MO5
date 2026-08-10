@@ -51,7 +51,8 @@ reach the exit:
 - The final room of each stage contains the stage door. Stage 1 therefore has
   its key and stage door in its only room.
 - The explorer must hold the key before a gate or stage door opens.
-- Guardians emerge from three two-cell nests in each room.
+- Five guardians emerge from three two-cell nests in each room; the fourth and
+  fifth guardians reuse cleared nest locations.
 - The explorer can fire left or right, but not vertically.
 - Warps appear as paired up/down destinations and move the explorer between
   their aligned endpoints.
@@ -253,7 +254,7 @@ silently accepted.
   their old footprints are restored from that authoritative map.
 - The explorer and guardians have eight horizontal shift phases for pixel-smooth
   motion while room collision remains tile based.
-- Actor pools are deliberately fixed: three player shots and three guardians.
+- Actor pools are deliberately fixed: three player shots and five guardians.
 
 For the complete routine and state contracts, see
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).

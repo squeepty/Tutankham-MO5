@@ -199,11 +199,18 @@ PLAYER_INVULNERABLE_BLINK_DELAY equ 4
 PLAYER_DEATH_EFFECT_FRAMES equ  15
 SHOT_COUNT              equ     3
 SHOT_MOVE_DELAY         equ     1
-ENEMY_COUNT             equ     3
-; About 20 ms at the stock 1 MHz 6809. Keeping this cadence CPU-cycle based
-; avoids the monitor-hook overrun observed in DCMOTO.
+; Five live guardians share the three physical nest locations in every room.
+; Keeping the pool and nest counts separate lets later guardians reform at an
+; existing nest without changing the arcade-derived maze layouts.
+ENEMY_SPAWN_COUNT       equ     3
+ENEMY_COUNT             equ     5
+; About 20 ms at the stock 1 MHz 6809. WaitMainLoopFrame removes a calibrated
+; slice for each active guardian beyond the original three-slot workload,
+; preserving the established real-time cadence as snakes four and five spawn.
 FRAME_DELAY_OUTER       equ     18
 FRAME_DELAY_INNER       equ     160
+FRAME_DELAY_ITERATIONS  equ     2907
+FRAME_DELAY_EXTRA_ENEMY_ITERATIONS equ 200
 ; Guardian speed uses eightieth-pixel units selected from EnemySpeedByRoom.
 ; The flattened table rises smoothly from 126/80 (70% of the explorer) in
 ; Stage 1 Room 1 to 162/80 (90%) in Stage 9 Room 3.

@@ -897,7 +897,8 @@ RoomPlayerStartY:
         fcb     17,17,17
         fcb     17,17,17
 EnemyInitialX:
-        ; Three entries per room, matching the three two-cell S nest markers.
+        ; Three nest entries per room. Five runtime guardians reuse these
+        ; origins through SetCurrentEnemyTableIndex.
         fcb     16,10,26
         fcb     8,20,26
         fcb     15,23,5

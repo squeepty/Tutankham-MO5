@@ -33,7 +33,7 @@ MainLoop:
         ; Exactly one input/simulation/render pass is dispatched per delay.
         ; Sound routines are synchronous and intentionally extend the current
         ; frame rather than introducing an interrupt-driven audio subsystem.
-        jsr     WaitFrame
+        jsr     WaitMainLoopFrame
         jsr     RunGameFrame
         bra     MainLoop
 

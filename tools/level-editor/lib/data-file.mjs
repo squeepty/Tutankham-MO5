@@ -1,6 +1,6 @@
 const WIDTH = 30;
 const HEIGHT = 22;
-const ENEMY_COUNT = 3;
+const ENEMY_SPAWN_COUNT = 3;
 const TILE_PATTERN = /^[#.KTSVARD]+$/;
 
 function escapeRegExp(value) {
@@ -94,21 +94,21 @@ export function parseGameData(source) {
     throw new Error("Player start tables do not match the room count");
   }
   if (
-    enemyX.length !== labels.length * ENEMY_COUNT ||
-    enemyY.length !== labels.length * ENEMY_COUNT
+    enemyX.length !== labels.length * ENEMY_SPAWN_COUNT ||
+    enemyY.length !== labels.length * ENEMY_SPAWN_COUNT
   ) {
     throw new Error("Guardian start tables do not match the room count");
   }
 
   const rooms = labels.map((label, index) => {
     const identity = roomName(index, stageRoomOffsets, stageRoomCounts);
-    const enemyOffset = index * ENEMY_COUNT;
+    const enemyOffset = index * ENEMY_SPAWN_COUNT;
     return {
       id: label,
       ...identity,
       tiles: templateRows(source, label),
       start: { x: startX[index], y: startY[index] },
-      enemyStarts: Array.from({ length: ENEMY_COUNT }, (_, enemyIndex) => ({
+      enemyStarts: Array.from({ length: ENEMY_SPAWN_COUNT }, (_, enemyIndex) => ({
         x: enemyX[enemyOffset + enemyIndex],
         y: enemyY[enemyOffset + enemyIndex],
       })),
@@ -192,8 +192,13 @@ export function validateProjectShape(project, expectedLabels = undefined) {
         throw new Error(`${room.id} has an invalid ${label}`);
       }
     }
-    if (!Array.isArray(room.enemyStarts) || room.enemyStarts.length !== ENEMY_COUNT) {
-      throw new Error(`${room.id} must have exactly ${ENEMY_COUNT} guardian starts`);
+    if (
+      !Array.isArray(room.enemyStarts) ||
+      room.enemyStarts.length !== ENEMY_SPAWN_COUNT
+    ) {
+      throw new Error(
+        `${room.id} must have exactly ${ENEMY_SPAWN_COUNT} guardian starts`,
+      );
     }
   }
   return project;
@@ -298,5 +303,5 @@ export function serializeProject(source, project) {
 export const LEVEL_DIMENSIONS = Object.freeze({
   width: WIDTH,
   height: HEIGHT,
-  enemyCount: ENEMY_COUNT,
+  enemyCount: ENEMY_SPAWN_COUNT,
 });

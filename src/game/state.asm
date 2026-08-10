@@ -240,11 +240,12 @@ ShotDirection:
         rmb     SHOT_COUNT
 
 ;------------------------------------------------------------------------------
-; Fixed guardian pool
+; Fixed five-guardian pool
 ;
 ; Committed EnemyX/Y, target EnemyTargetX/Y, and live EnemyPixelX/Y mirror the
-; explorer's cell-plus-pixel motion model. Per-actor timers deliberately avoid
-; synchronized animation, respawn, and decision phases.
+; explorer's cell-plus-pixel motion model. Five actor slots share the three
+; room nests. Per-actor timers deliberately avoid synchronized animation,
+; respawn, and decision phases.
 ;------------------------------------------------------------------------------
 EnemyAnimationTimer:
         rmb     ENEMY_COUNT

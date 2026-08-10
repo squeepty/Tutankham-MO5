@@ -299,13 +299,14 @@ or strike a guardian.
 
 ### Guardians
 
-The guardian pool also contains three fixed slots. Its fields use a
+The guardian pool contains five fixed slots. Its fields use a
 structure-of-arrays layout: all states together, all X positions together, and
 so on. A shared slot index selects the corresponding byte from each array.
 
 Guardian lifecycle includes nest, emergence, active pursuit, hit/death effect,
 and respawn timing. Starts in the data tables must coincide with the room's
-three `S` nest pairs.
+three `S` nest pairs. Runtime slots four and five reuse the first and second
+nest records; emergence waits until the selected nest cell is clear.
 
 Speed uses an accumulator over an 80-unit denominator. The flattened speed table
 must rise strictly from 126/80 in Stage 1, Room 1 to 162/80 in Stage 9, Room 3.
@@ -371,7 +372,9 @@ Named sound wrappers map gameplay events to short, locally synthesized cues.
 Several timing contours are identified in `src/sound.asm` by their Bomb Jacques
 design reference. Because sound and frame pacing are both busy loops, changes
 should be tested at target clock speed rather than judged only from instruction
-counts.
+counts. The fourth and fifth active guardians shorten only the gameplay busy
+wait to compensate for their additional simulation and rendering workload;
+presentation states retain the full base delay.
 
 ## Content validation
 

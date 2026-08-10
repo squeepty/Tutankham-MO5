@@ -16,7 +16,7 @@ Implemented:
 - three treasures and three guardian nests in every room;
 - stage key, room gates, final stage doors, and paired warps;
 - pixel-smooth explorer and guardian movement;
-- three-slot projectile and guardian pools;
+- three-slot projectile and five-slot guardian pools;
 - collisions, death, respawn, lives, scoring, flash, and high scores;
 - title, intro, room transition, stage completion, game over, and attract mode;
 - keyboard and joystick controls;
