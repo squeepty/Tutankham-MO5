@@ -13,7 +13,7 @@ const projectRoot = path.resolve(scriptDirectory, "..");
 const sourcePath = path.join(projectRoot, "src/game/data.asm");
 const outputDirectory = path.resolve(
   projectRoot,
-  process.argv[2] ?? "levels",
+  process.argv[2] ?? "levels_current",
 );
 
 const CELL_SIZE = 8;
