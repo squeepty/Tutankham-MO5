@@ -89,6 +89,10 @@ HasKey:
         fcb     0
 FlashAvailable:
         fcb     0
+; Room-local multiplier for consecutive treasure pickups. Death and room entry
+; reset it, so a flawless sweep pays 500, 1000, then 1500 points.
+TreasureStreak:
+        fcb     0
 ExtraLifeAwarded:
         fcb     0
 ScoreTenThousands:
@@ -296,6 +300,12 @@ CurrentEnemySpeedUnits:
 CurrentEnemyForceRedraw:
         fcb     0
 EnemyCandidateDirection:
+        fcb     0
+; Scratch pursuit point used by direct and intercepting behavior. The latter
+; projects it ahead of the explorer before entering the shared chase routine.
+EnemyGoalX:
+        fcb     0
+EnemyGoalY:
         fcb     0
 EnemyHorizontalPhase:
         fcb     0

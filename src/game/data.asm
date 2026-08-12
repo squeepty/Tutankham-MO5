@@ -83,7 +83,7 @@ ReturnTitleText:
         fcc     "PRESS FIRE FOR TITLE"
         fcb     0
 InitialStatusText:
-        fcc     "FIND KEY - CROSS 3 ROOMS - REACH EXIT"
+        fcc     "TREASURES BUILD STREAK - FIND THE KEY"
         fcb     0
 NeedKeyStatusText:
         fcc     "THE EXIT IS LOCKED - FIND THE KEY"
@@ -95,7 +95,13 @@ KeyCarryStatusText:
         fcc     "KEY SECURED - REACH THE FINAL DOOR"
         fcb     0
 TreasureStatusText:
-        fcc     "TREASURE COLLECTED - 500 POINTS"
+        fcc     "TREASURE STREAK X1 - 500 POINTS"
+        fcb     0
+TreasureStreakTwoStatusText:
+        fcc     "TREASURE STREAK X2 - 1000 POINTS"
+        fcb     0
+TreasureStreakThreeStatusText:
+        fcc     "TREASURE STREAK X3 - 1500 POINTS"
         fcb     0
 FlashStatusText:
         fcc     "FLASH BOMB CLEARED THE CHAMBER"
@@ -851,6 +857,15 @@ EnemySpeedByRoom:
         fcb     126,126,126,126,126,126,126
         fcb     126,126,126,126,126,126,126
         fcb     126,126,126,126,126,126,126
+
+; Stable behavioral identities follow runtime slots through every respawn.
+; Three direct chasers keep baseline pressure around the two specialists.
+EnemyBehaviorBySlot:
+        fcb     ENEMY_BEHAVIOR_DIRECT,ENEMY_BEHAVIOR_INTERCEPT
+        fcb     ENEMY_BEHAVIOR_DIRECT,ENEMY_BEHAVIOR_WANDER
+        fcb     ENEMY_BEHAVIOR_DIRECT
+EnemyWanderDirections:
+        fcb     DPAD_UP_MASK,DPAD_RIGHT_MASK,DPAD_DOWN_MASK,DPAD_LEFT_MASK
 
 ; Variable stage boundaries over the 21 sequential room tables.
 StageRoomOffsets:

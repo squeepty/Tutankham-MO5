@@ -45,14 +45,18 @@ New documentation and player-visible text should use **stage** and **room**.
 Guide the explorer through each maze, collect treasure, take the stage key, and
 reach the exit:
 
-- Every room contains three treasures.
+- Every room contains three treasures. Collecting them without dying builds a
+  room-local score streak: the first is worth 500 points, the second 1000, and
+  the third 1500. Death or entering another room resets the multiplier.
 - Room 1 of each stage contains that stage's key.
 - Every non-final room contains a gate to the next room.
 - The final room of each stage contains the stage door. Stage 1 therefore has
   its key and stage door in its only room.
 - The explorer must hold the key before a gate or stage door opens.
 - Five guardians emerge from three two-cell nests in each room; the fourth and
-  fifth guardians reuse cleared nest locations.
+  fifth guardians reuse cleared nest locations. Their fixed behavioral roles
+  include direct chase, look-ahead interception, and alternating wander/chase
+  behavior.
 - The explorer can fire left or right, but not vertically.
 - Warps appear as paired up/down destinations and move the explorer between
   their aligned endpoints.
@@ -204,23 +208,29 @@ structural, progression, reachability, pacing, or spacing rules, including:
 
 - exactly 9 stages with room counts `1/2/2/2/2/3/3/3/3`, and 21 unique
   templates;
-- exactly 3 two-cell guardian nests and the correct two-cell room/stage exit;
+- exactly 3 treasures, 6 guardian-nest tiles, and the correct two-cell
+  room/stage exit;
 - correct placement of the key, room gate, and final stage door;
-- reachable player starts, guardian starts, key, treasure, exits, and warp
-  destinations;
+- guardian origins placed on nest tiles, plus reachable player starts, guardian
+  starts, key, treasure, exits, and warp destinations;
 - a safe route to required progression items that does not pass through a nest;
 - paired warps whose destination has an escape route;
-- minimum key-to-treasure distance of 10 Manhattan cells;
+- minimum key-to-treasure distance of 10 Manhattan cells, relaxed to 4 for the
+  faithful arcade imports;
 - no treasure directly beside the player start or a guardian nest;
 - no guardian nest directly beside a teleporter;
 - no key directly beside an exit;
 - guardian speed fixed at 70% of explorer speed while progression is disabled;
-- maze-quality checks for the final 12 generated rooms, including route turns
+- maze-quality checks for the final 12 generated rooms, limited to route turns
   and open-area limits.
 
-Stage 1, Room 1 is the reference room and intentionally keeps a few topology
-exceptions. All other exceptions are explicit in the validator rather than
-silently accepted.
+Treasure-to-treasure spacing, nest pairing, spawn-to-nest distance,
+nest-to-exit clearance, branch cells, and cycle counts are intentionally not
+validated.
+
+The first nine source/reference rooms are exempt from generated-maze metrics.
+All other exceptions are explicit in the validator rather than silently
+accepted.
 
 ## Code map
 
@@ -236,12 +246,15 @@ silently accepted.
 | `src/game.asm` | Game-module include ordering |
 | `src/game/data.asm` | Strings, graphics, readable rooms, packed-room tables |
 | `src/game/state.asm` | Mutable game state and fixed actor pools |
-| `src/game/flow.asm` | State machine, movement, collisions, AI, progression |
-| `src/game/rendering.asm` | Static-map restoration and dynamic compositing |
+| `src/game/flow.asm` | Include manifest for progression and simulation code |
+| `src/game/flow/*.asm` | Title/demo, player, projectile, guardian, and progression rules |
+| `src/game/rendering.asm` | Include manifest for presentation and rendering code |
+| `src/game/rendering/` | Presentation, world, actor, restoration, and HUD renderers |
 | `tools/validate-content.mjs` | Structural and playability validation |
 | `tools/pack-maps.mjs` | Readable-template to packed-map generator |
 | `tools/make-k7.mjs` | Thomson cassette block writer |
 | `tools/build.sh` | Reproducible validation, build, packaging, and size guard |
+| `docs/assembly/README.md` | Educational, file-by-file 6809 assembly handbook |
 | `docs/ARCHITECTURE.md` | Runtime and data-design reference |
 | `docs/NEXT_STEPS.md` | Verification backlog and release checklist |
 | `prompt.md` | Audio direction and event-to-cue mapping |
@@ -258,8 +271,10 @@ silently accepted.
   motion while room collision remains tile based.
 - Actor pools are deliberately fixed: three player shots and five guardians.
 
-For the complete routine and state contracts, see
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+For an educational walkthrough of every assembly file—including logic,
+algorithms, data structures, game rules, rendering, and register contracts—see
+the [`docs/assembly` handbook](docs/assembly/README.md). For the system-level
+runtime and data contracts, see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Project provenance
 

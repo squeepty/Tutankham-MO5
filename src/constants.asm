@@ -200,6 +200,8 @@ PLAYER_DIR_LEFT         equ     DPAD_LEFT_MASK
 PLAYER_DIR_RIGHT        equ     DPAD_RIGHT_MASK
 PLAYER_START_LIVES      equ     5
 EXTRA_LIFE_SCORE_TEN_THOUSANDS equ 2
+TREASURE_STREAK_MAX     equ     3
+TREASURE_BASE_SCORE_HUNDREDS equ 5
 PLAYER_INVULNERABLE_FRAMES equ  45
 PLAYER_INVULNERABLE_BLINK_DELAY equ 4
 PLAYER_DEATH_EFFECT_FRAMES equ  15
@@ -210,6 +212,13 @@ SHOT_MOVE_DELAY         equ     1
 ; existing nest without changing the arcade-derived maze layouts.
 ENEMY_SPAWN_COUNT       equ     3
 ENEMY_COUNT             equ     5
+ENEMY_BEHAVIOR_DIRECT   equ     0
+ENEMY_BEHAVIOR_INTERCEPT equ    1
+ENEMY_BEHAVIOR_WANDER   equ     3
+ENEMY_INTERCEPT_LOOKAHEAD equ    4
+; The wandering guardian alternates eight cell decisions of wandering with
+; eight decisions of direct pursuit as this bit changes in its phase counter.
+ENEMY_WANDER_CHASE_PHASE_BIT equ $08
 ; About 20 ms at the stock 1 MHz 6809. WaitMainLoopFrame removes a calibrated
 ; slice for each active guardian beyond the original three-slot workload,
 ; preserving the established real-time cadence as snakes four and five spawn.

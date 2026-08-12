@@ -451,8 +451,8 @@ maps.forEach((rows, roomIndex) => {
 
   const treasures = positions(rows, "T");
   assert(
-    treasures.length >= 3 && treasures.length <= 4,
-    `${name} must contain 3 or 4 treasures`,
+    treasures.length === 3,
+    `${name} must contain exactly 3 treasures`,
   );
   for (const [treasureX, treasureY] of treasures) {
     const separation =

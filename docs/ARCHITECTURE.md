@@ -37,7 +37,18 @@ main.asm
 └── game.asm
     ├── game/data.asm
     ├── game/rendering.asm
+    │   ├── game/rendering/presentation.asm
+    │   ├── game/rendering/world.asm
+    │   ├── game/rendering/actors/*.asm
+    │   ├── game/rendering/restoration/*.asm
+    │   └── game/rendering/hud.asm
     ├── game/flow.asm
+    │   ├── game/flow/progression-*.asm
+    │   ├── game/flow/title-*.asm
+    │   ├── game/flow/player*.asm
+    │   ├── game/flow/projectile*.asm
+    │   ├── game/flow/guardian*.asm
+    │   └── game/flow/map.asm
     └── game/state.asm
 ```
 
@@ -51,7 +62,43 @@ The order is intentional:
   auditable.
 
 There is no linker-level module boundary. Labels are globally visible, and
-comments at each public routine are the calling convention.
+comments at each fragment header and reusable public routine are the calling
+convention. `flow.asm` and `rendering.asm` are textual include manifests; their
+fragments remain in historical order so the split does not move assembled code.
+
+### Assembly register contracts
+
+Fragment headers document the inputs, outputs, and conservative clobber set for
+their exported entry points. More specific routine comments override a fragment
+default. Labels not named or grouped by a fragment contract are private
+implementation details and must not be called from another fragment without
+first adding a contract.
+
+The contract vocabulary is:
+
+- **Inputs** lists registers and required shared state on entry;
+- **Outputs** lists return registers, condition flags, state changes, and display
+  effects callers may rely on;
+- **Clobbers** lists registers and shared selectors/scratch that callers must
+  treat as destroyed.
+
+All current game fragments balance `S` and leave `DP` unchanged. Rendering
+entries also state their display-bank result; unless a narrower contract says
+otherwise they return with the bitmap plane selected. `A` and `B` implicitly
+cover the 6809 `D` register, while `CC` includes comparison results only where
+the output contract explicitly promises them.
+
+| Fragment family | Ownership |
+| --- | --- |
+| `flow/title-*.asm` | Title lifecycle, cheats, attract scene, and demo driver |
+| `flow/progression-*.asm`, `flow/map.asm` | Frame dispatch, room/stage transitions, scoring, and map access |
+| `flow/player*.asm` | Explorer movement, pickups, contact damage, death, and respawn |
+| `flow/projectile*.asm` | Shot pool, collision checks, and flash bomb |
+| `flow/guardian*.asm` | Guardian pool, movement, behavior, reservations, and respawn |
+| `rendering/presentation.asm`, `rendering/world.asm` | Full screens, status text, rooms, and static tiles |
+| `rendering/actors/*.asm` | Explorer, guardian, effect, and shot compositing |
+| `rendering/restoration/*.asm` | Static-map restoration for every dynamic footprint |
+| `rendering/hud.asm` | Score, high score, lives, cheat state, and flash indicator |
 
 ## Platform and memory model
 
@@ -96,8 +143,8 @@ Several coordinate systems coexist:
 
 The physical grid is the runtime authority. The validation grid strips the
 one-cell left/right border and collapses each pair of vertically doubled
-interior rows. It is used to reason about nest pairs, branches, and maze
-connectivity without counting the doubled artwork rows as separate paths.
+interior rows. It is used for spawn and maze-shape checks without counting the
+doubled artwork rows as separate paths.
 
 The explorer's pixel coordinates permit smooth motion. Cell coordinates change
 only when enough pixel motion has crossed a cell boundary; wall and interaction
@@ -311,6 +358,16 @@ and respawn timing. Starts in the data tables must coincide with the room's
 three `S` nest pairs. Runtime slots four and five reuse the first and second
 nest records; emergence waits until the selected nest cell is clear.
 
+Each runtime slot retains a behavioral identity through respawns:
+
+- slots one, three, and five directly chase the explorer;
+- slot two targets a point four cells ahead of the explorer;
+- slot four alternates eight cell decisions of wandering with eight of direct
+  pursuit.
+
+All identities share the same movement budget, actor reservations, collision
+rules, and fallback handling, so their differences stay legible but modest.
+
 Speed uses an accumulator over an 80-unit denominator. Campaign speed
 progression is currently disabled, so every room uses 126/80 units: 70% of the
 explorer's average speed.
@@ -323,7 +380,8 @@ gameplay semantics from whatever dynamic art currently overlaps the display.
 Important interaction rules:
 
 - a wall rejects explorer and guardian movement;
-- treasure becomes floor and increases score;
+- treasure becomes floor and increases a room-local streak award from 500 to
+  1000 to 1500 points;
 - the key becomes floor and sets stage-key ownership;
 - a gate or door remains closed unless the key is held;
 - a permitted gate triggers room or stage transition;
@@ -355,7 +413,10 @@ the title. Demo scores never enter the high-score table.
 
 The score is stored as binary state and converted to display digits when the HUD
 or presentation screen needs it. Treasure, guardian hits, and progression events
-award points through shared score routines.
+award points through shared score routines. Treasure awards use a room-local
+multiplier: consecutive pickups pay 500, 1000, then 1500 points. Entering a room
+or losing a life resets the streak, so collecting all three without dying is
+worth 3000 points.
 
 Each run starts with five lives. Lives are decremented by the normal death flow,
 and the first score transition to 20000 or higher awards one extra life for the
@@ -396,9 +457,10 @@ It reconstructs the room tables and checks:
 
 - correct stage, room, row, and column counts;
 - allowed tile alphabet;
-- exactly three nest pairs and the expected exit type;
+- exactly three treasures, six guardian-nest tiles, and the expected two-cell
+  exit type;
 - correct key placement by room;
-- matching start and guardian-origin tables;
+- matching start/origin table sizes, with every guardian origin on a nest tile;
 - unique room templates.
 
 ### Reachability and safety
@@ -406,34 +468,38 @@ It reconstructs the room tables and checks:
 - all required objects are reachable from the explorer start;
 - all walkable cells belong to the connected room region;
 - key and exit have nest-avoiding safe routes;
-- warp endpoints are paired and their destinations can escape;
-- the player start is not immediately exposed to a nest.
+- warp endpoints are paired and their destinations can escape.
 
 ### Spacing
 
-- treasure-to-treasure and key-to-treasure Manhattan distance is at least 10;
 - a treasure is not directly adjacent to the explorer start;
+- key-to-treasure Manhattan distance is at least 10, relaxed to 4 for faithful
+  arcade imports;
 - treasure and guardian nest retain more than one Chebyshev cell of clearance;
 - guardian nests retain more than one Chebyshev cell from teleporters;
 - collinear guardian nests and teleporters differ by more than two cells;
-- guardian nests are at least four Chebyshev cells from the exit;
 - a key is not directly adjacent to the exit.
+
+Treasure-to-treasure separation, player-start-to-nest distance, nest-to-exit
+clearance, and the physical pairing of the six `S` tiles are intentionally not
+enforced.
 
 ### Maze quality
 
-Every room starts on floor with a horizontal escape and a graph distance of at
-least twelve logical cells to the nearest nest. The validator does not enforce
-a minimum horizontal firing-lane length at the spawn.
+Every room starts on floor with a horizontal escape. The validator does not
+enforce a minimum horizontal firing-lane length or minimum nest reaction
+distance at the spawn.
 
 For the final twelve generated rooms, the validator additionally enforces:
 
-- at least seven turns on the route to the exit;
-- at least five branch cells along that route;
-- at least twelve independent cycles;
+- at least seven turns in the logical gate-route metric;
 - a maximum open-square score of eighteen.
 
-Stage 1, Room 1 is the explicit reference-room exception for selected topology
-checks.
+Branch-cell counts, cycle counts, and corridor-length limits are intentionally
+not enforced. Generated-maze metrics do not apply to the first nine
+source/reference rooms. `StageThreeRoomThreeTemplate` has one explicit
+disconnected decorative-floor exception; required objects and progression
+routes remain fully checked.
 
 ## Build and packaging
 

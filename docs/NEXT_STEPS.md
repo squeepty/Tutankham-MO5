@@ -44,8 +44,12 @@ cheat.
 For every room, confirm:
 
 - the explorer enters on open floor and has time to react;
-- all three treasures can be reached and collected;
+- all three treasures can be reached and award 500, 1000, then 1500 points
+  when collected without dying;
 - each guardian emerges from the visible nest that matches its logical origin;
+- the direct guardians consistently pressure the explorer's current cell;
+- the interceptor cuts toward the explorer's projected path;
+- the wanderer alternates visibly between roaming and pursuit;
 - shot/guardian collisions award score once;
 - the key can be collected in Room 1;
 - gates in every non-final room remain closed before the key and open after it;
@@ -53,6 +57,8 @@ For every room, confirm:
 - paired warps land on the expected endpoint without immediate retriggering;
 - no consumed pickup or opened exit reappears during sprite restoration;
 - death and respawn do not strand the explorer inside a wall or actor;
+- after a death, the next uncollected treasure starts again at 500 points;
+- entering another room resets its first treasure to 500 points;
 - the HUD remains correct after score, life, key, and flash changes.
 
 Record findings as, for example, `Stage 3, Room 2 (screen 8)`.
@@ -265,7 +271,7 @@ separately from gameplay changes so regressions remain easy to isolate.
 | 3 | Shots, guardians, hits, death, respawn |
 | 4 | Score, lives, HUD, sound |
 | 5 | Three-room stage flow and progression |
-| 6 | Seven-stage content set, attract mode, high scores |
+| 6 | Nine-stage content set, attract mode, high scores |
 | 7 | Content validator, compact map generation, K7 packaging, title cheat gate |
 
 Future work should be evaluated against the manual evidence above rather than
