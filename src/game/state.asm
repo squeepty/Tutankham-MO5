@@ -63,6 +63,8 @@ PlayerLives:
         fcb     0
 InfiniteLives:
         fcb     0
+GuardianHitsDisabled:
+        fcb     0
 PlayerInvulnerabilityTimer:
         fcb     0
 PlayerInvulnerabilityBlinkTimer:
@@ -86,6 +88,8 @@ PlayerDeathY:
 HasKey:
         fcb     0
 FlashAvailable:
+        fcb     0
+ExtraLifeAwarded:
         fcb     0
 ScoreTenThousands:
         fcb     0

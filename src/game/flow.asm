@@ -93,6 +93,7 @@ ResetLevel:
         jsr     LoadCurrentRoomMap
         clr     GameState
         clr     HasKey
+        clr     ExtraLifeAwarded
         clr     ScoreTenThousands
         clr     ScoreHundreds
         clr     NewHighScoreFlag
@@ -115,6 +116,7 @@ ResetLevel:
         clr     PlayerRedrawPending
         clr     PlayerCompositePending
         clr     InfiniteLives
+        clr     GuardianHitsDisabled
         clr     ShotMoveTimer
         clr     ShotAnimationFrame
         jsr     SetPlayerAtCurrentRoomStart
@@ -233,12 +235,9 @@ RunGameFrame:
         lda     Dpad_Held
         ora     Action_Held
         beq     RunDemoFrame
-        lda     Action_Held
-        bita    #ACTION_FIRE_MASK
-        beq     RunDemoCancel
-        jsr     StartNewGame
-        lbra    RunGameFrameDone
 RunDemoCancel:
+        ; Any real input dismisses attract mode. In particular, Space/Fire
+        ; returns to the title and must be released and pressed again to play.
         jsr     ShowTitleScreen
         lbra    RunGameFrameDone
 RunDemoFrame:
@@ -287,6 +286,7 @@ RunLevelIntroFrame:
 RunPlayingFrame:
         jsr     UpdateStatusMessage
         jsr     ToggleInfiniteLives
+        jsr     DisableGuardianHits
         tst     PlayerDeathTimer
         beq     RunPlayingPlayerAlive
         jsr     UpdatePlayerDeath
@@ -404,6 +404,20 @@ ToggleInfiniteLivesOff:
         jsr     DrawHudIndicators
         jmp     DrawInfiniteLivesOffStatus
 ToggleInfiniteLivesDone:
+        rts
+
+DisableGuardianHits:
+        ; D is a one-way switch for the current run so its normal role as the
+        ; AZERTY right-movement key cannot accidentally re-enable contact.
+        lda     Action_Press
+        bita    #ACTION_DISABLE_GUARDIAN_HITS_MASK
+        beq     DisableGuardianHitsDone
+        tst     GuardianHitsDisabled
+        bne     DisableGuardianHitsDone
+        lda     #1
+        sta     GuardianHitsDisabled
+        jmp     DrawGuardianHitsDisabledStatus
+DisableGuardianHitsDone:
         rts
 
 DrawVisiblePlayerPose:
@@ -1479,7 +1493,6 @@ TryPlayerExit:
         clr     CurrentRoom
         clr     HasKey
         lda     #1
-        sta     FlashAvailable
         sta     PlayerFacing
         sta     PlayerVisible
         clr     PlayerInvulnerabilityTimer
@@ -1573,6 +1586,17 @@ AddScoreSaturate:
 AddScoreStore:
         sta     ScoreHundreds
 AddScoreCheckHigh:
+        ; The run grants exactly one extra life on first reaching 20000.
+        tst     ExtraLifeAwarded
+        bne     AddScoreCheckHighScore
+        lda     ScoreTenThousands
+        cmpa    #EXTRA_LIFE_SCORE_TEN_THOUSANDS
+        blo     AddScoreCheckHighScore
+        lda     #1
+        sta     ExtraLifeAwarded
+        inc     PlayerLives
+        jsr     DrawHudIndicators
+AddScoreCheckHighScore:
         ldx     #HighScoreTenThousands
         jsr     CompareScoreToX
         bls     AddScoreDone
@@ -2443,7 +2467,10 @@ EnemyCandidateIsBlocked:
 ;------------------------------------------------------------------------------
 CheckPlayerEnemyContact:
         ; Axis-aligned 8x8 overlap in pixel space. Respawn grace and explorer
-        ; invulnerability suppress damage without suppressing rendering.
+        ; invulnerability suppress damage without suppressing rendering. The
+        ; SQUEEPTY-gated D action can disable this contact for the current run.
+        tst     GuardianHitsDisabled
+        bne     CheckPlayerEnemyContactClear
         tst     PlayerDeathTimer
         bne     CheckPlayerEnemyContactClear
         tst     PlayerInvulnerabilityTimer
@@ -2543,7 +2570,8 @@ BeginPlayerDeathEffect:
 
 RespawnPlayer:
         ; Restore only the cells covered by the frozen death scene. The maze
-        ; and HUD remain in place while the dynamic actors are reset.
+        ; and HUD remain in place while the dynamic actors are reset. Each new
+        ; life receives one flash bomb, whether or not the previous one was used.
         jsr     RestoreAllShotCells
         jsr     RestoreAllEnemyVisuals
         jsr     RestorePlayerDeathEffect
@@ -2551,6 +2579,7 @@ RespawnPlayer:
         lda     #1
         sta     PlayerFacing
         sta     PlayerVisible
+        sta     FlashAvailable
         lda     #PLAYER_INVULNERABLE_FRAMES
         sta     PlayerInvulnerabilityTimer
         lda     #PLAYER_INVULNERABLE_BLINK_DELAY
@@ -2562,6 +2591,7 @@ RespawnPlayer:
         jsr     ResetEnemies
         jsr     DrawAllEnemies
         jsr     DrawPlayer
+        jsr     DrawHudIndicators
         jsr     DrawDeathStatus
         jsr     SoundRespawn
         rts

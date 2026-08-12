@@ -96,6 +96,12 @@ DrawTitleScreen:
         jsr     DrawString
         jsr     DrawTitleSceneFrame
         jsr     DrawTitleScene
+        lda     #COLOR_DEV_VERSION
+        sta     TextColor
+        ldu     #TitleDevVersionText
+        lda     #TITLE_DEV_VERSION_COL
+        ldb     #TITLE_DEV_VERSION_ROW
+        jsr     DrawString
         tst     CheatUnlocked
         beq     DrawTitleScreenDone
         jmp     DrawTitleCheatUnlocked
@@ -563,6 +569,10 @@ DrawInfiniteLivesOnStatus:
 
 DrawInfiniteLivesOffStatus:
         ldu     #InfiniteLivesOffStatusText
+        jmp     DrawStatus
+
+DrawGuardianHitsDisabledStatus:
+        ldu     #GuardianHitsDisabledStatusText
         jmp     DrawStatus
 
 DrawEnemyHitStatus:
@@ -1289,7 +1299,8 @@ DrawHudHighScoreReady:
         ldb     #HUD_TEXT_COL+17
         jmp     DrawHudDigit
 
-; Draw one centered explorer icon per remaining life with no gaps. When the
+; Draw one centered explorer icon per reserve life with no gaps. PlayerLives
+; includes the active explorer, so it is excluded from the HUD count. When the
 ; flash is available, place its red lightning icon one spaced cell to the right.
 ; Clearing the complete span removes stale icons.
 DrawHudIndicators:
@@ -1321,6 +1332,8 @@ DrawHudIndicatorsClearNext:
 DrawHudIndicatorsFinite:
         lda     PlayerLives
         beq     DrawHudIndicatorsDone
+        deca
+        beq     DrawHudIndicatorsFlashOnly
         sta     MapCellsRemaining
         sta     HudColumn
         lda     #TEXT_COLUMNS
@@ -1339,6 +1352,10 @@ DrawHudIndicatorsLifeNext:
         bne     DrawHudIndicatorsLifeNext
 
         inc     HudColumn
+        bra     DrawHudIndicatorsFlash
+DrawHudIndicatorsFlashOnly:
+        lda     #TEXT_COLUMNS/2
+        sta     HudColumn
 DrawHudIndicatorsFlash:
         tst     FlashAvailable
         beq     DrawHudIndicatorsDone

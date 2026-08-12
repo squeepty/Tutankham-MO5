@@ -170,14 +170,16 @@ Repeated letters are edge detected, so the two `E` characters require two real
 keypresses. A mismatch resets progress while still allowing the current key to
 begin a new match when appropriate.
 
-Until the sequence completes, the `I` and `N` actions are removed from the
-snapshot. After completion:
+Until the sequence completes, the `I`, `N`, and `D` cheat actions are removed
+from the snapshot. After completion:
 
+- `D` disables explorer damage from guardian contact for the run while
+  retaining its right-movement input;
 - `I` enables infinite lives for the run;
 - `N` requests the next unlocked room or stage transition;
 - the unlock persists until the program is reloaded.
 
-The title displays `CHEATS UNLOCKED N NEXT`. The infinite-lives key remains
+The title displays `CHEATS UNLOCKED N NEXT`. The other cheat keys remain
 undisclosed on screen by design.
 
 ## Room data pipeline
@@ -228,8 +230,9 @@ Every room has three two-cell guardian nests and three treasures.
   therefore holds both the key and final door.
 
 The key remains owned across all rooms of a stage. Entering the next stage
-refreshes the key and flash state while preserving the run's score and remaining
-lives.
+refreshes the key state while preserving the run's score, remaining lives, and
+current flash supply. A flash bomb is supplied at run start and after each
+non-final death, so every playable life receives exactly one.
 
 Warp endpoints are paired by direction. The destination lookup must land on
 walkable content with a valid escape path.
@@ -308,8 +311,9 @@ and respawn timing. Starts in the data tables must coincide with the room's
 three `S` nest pairs. Runtime slots four and five reuse the first and second
 nest records; emergence waits until the selected nest cell is clear.
 
-Speed uses an accumulator over an 80-unit denominator. The flattened speed table
-must rise strictly from 126/80 in Stage 1, Room 1 to 162/80 in Stage 9, Room 3.
+Speed uses an accumulator over an 80-unit denominator. Campaign speed
+progression is currently disabled, so every room uses 126/80 units: 70% of the
+explorer's average speed.
 
 ## Collision and interaction
 
@@ -325,7 +329,9 @@ Important interaction rules:
 - a permitted gate triggers room or stage transition;
 - warp contact relocates the explorer to the paired destination;
 - a shot hitting a guardian enters the guardian's hit/death lifecycle;
-- explorer/guardian overlap removes a life unless the run has infinite lives.
+- explorer/guardian overlap removes a life unless guardian hits have been
+  disabled; infinite lives still runs the death/respawn effect without reducing
+  the lives counter.
 
 When mutable tiles are consumed or opened, both `LevelMap` and the visible
 static layer must be updated so later footprint restoration does not resurrect
@@ -351,8 +357,13 @@ The score is stored as binary state and converted to display digits when the HUD
 or presentation screen needs it. Treasure, guardian hits, and progression events
 award points through shared score routines.
 
-Lives are decremented by the normal death flow. Infinite lives suppresses that
-decrement but does not bypass collision, death animation, or respawn.
+Each run starts with five lives. Lives are decremented by the normal death flow,
+and the first score transition to 20000 or higher awards one extra life for the
+entire run. Infinite lives suppresses death decrements but does not bypass
+collision, death animation, or respawn.
+
+The HUD life icons show reserve lives only; the currently active explorer is not
+included in the displayed count.
 
 The high-score table contains three session-persistent entries. It is initialized
 when the program starts, not every run. Game-over submission maintains descending
@@ -411,16 +422,14 @@ It reconstructs the room tables and checks:
 ### Maze quality
 
 Every room starts on floor with a horizontal escape and a graph distance of at
-least twelve logical cells to the nearest nest. Every room except Stage 1,
-Room 1 must also provide a horizontal entrance lane at least five logical cells
-long and avoid unrewarded cul-de-sac branches or isolated accessible pockets.
+least twelve logical cells to the nearest nest. The validator does not enforce
+a minimum horizontal firing-lane length at the spawn.
 
 For the final twelve generated rooms, the validator additionally enforces:
 
 - at least seven turns on the route to the exit;
 - at least five branch cells along that route;
 - at least twelve independent cycles;
-- a maximum straight horizontal run of fifteen logical cells;
 - a maximum open-square score of eighteen.
 
 Stage 1, Room 1 is the explicit reference-room exception for selected topology

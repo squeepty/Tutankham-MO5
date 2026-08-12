@@ -56,14 +56,15 @@ reach the exit:
 - The explorer can fire left or right, but not vertically.
 - Warps appear as paired up/down destinations and move the explorer between
   their aligned endpoints.
-- Score and lives carry across rooms and stages. The stage key and flash supply
-  are refreshed when a new stage begins.
+- Score and lives carry across rooms and stages. Each run starts with five
+  lives, each life receives one flash bomb, and reaching 20000 points awards
+  one extra life for the run. The stage key is refreshed when a new stage begins.
 - The three highest scores remain available for the loaded session. Attract-mode
   demonstration scores are never recorded.
 
-The room set becomes progressively faster: guardian motion rises from 1.575
-pixels per frame in Stage 1, Room 1 to 2.025 pixels per frame in Stage 9,
-Room 3. The explorer averages 2.25 pixels per frame.
+Guardian speed progression is currently disabled. Guardians move at 1.575
+pixels per frame in every room, 70% of the explorer's 2.25-pixel-per-frame
+average.
 
 ## Controls
 
@@ -82,12 +83,14 @@ the unlock remains active until the program is reloaded.
 
 After unlocking:
 
+- `D` disables guardian contact hits on the explorer for the current run.
 - `I` enables infinite lives for the current run.
 - `N` enters the next room or stage through the current exit.
 
-Before `SQUEEPTY` is accepted, `I` and `N` are ignored. The title confirms the
-unlock with `CHEATS UNLOCKED N NEXT`; it intentionally does not advertise the
-infinite-lives key.
+Before `SQUEEPTY` is accepted, `D` remains only the right-movement alias, while
+`I` and `N` are ignored. The title confirms the unlock with
+`CHEATS UNLOCKED N NEXT`; it intentionally does not advertise the other cheat
+keys.
 
 If the title remains idle for about ten seconds, a non-interactive demonstration
 runs for about thirty seconds before returning to the title.
@@ -207,14 +210,13 @@ structural, progression, reachability, pacing, or spacing rules, including:
   destinations;
 - a safe route to required progression items that does not pass through a nest;
 - paired warps whose destination has an escape route;
-- minimum treasure separation and key-to-treasure distance of 10 Manhattan
-  cells;
+- minimum key-to-treasure distance of 10 Manhattan cells;
 - no treasure directly beside the player start or a guardian nest;
-- no guardian nest directly beside an exit or teleporter;
+- no guardian nest directly beside a teleporter;
 - no key directly beside an exit;
-- increasing guardian speed across the flattened room sequence;
-- maze-quality checks for the final 12 generated rooms, including route turns,
-  branches, cycles, corridor length, and open-area limits.
+- guardian speed fixed at 70% of explorer speed while progression is disabled;
+- maze-quality checks for the final 12 generated rooms, including route turns
+  and open-area limits.
 
 Stage 1, Room 1 is the reference room and intentionally keeps a few topology
 exceptions. All other exceptions are explicit in the validator rather than

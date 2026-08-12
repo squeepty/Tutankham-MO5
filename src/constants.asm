@@ -44,6 +44,7 @@ TEXT_ROWS               equ     25
 COLOR_BACKGROUND        equ     $00
 COLOR_TEXT              equ     $70
 COLOR_TITLE             equ     $E0
+COLOR_DEV_VERSION       equ     $90
 COLOR_WALL_ROOM_ONE     equ     $B0
 COLOR_WALL_ROOM_TWO     equ     $90
 COLOR_WALL_ROOM_THREE   equ     $C0
@@ -72,6 +73,7 @@ ACTION_FIRE_MASK        equ     %00000001
 ACTION_FLASH_MASK       equ     %00000010
 ACTION_NEXT_ROOM_MASK   equ     %00000100
 ACTION_INFINITE_LIVES_MASK equ  %00001000
+ACTION_DISABLE_GUARDIAN_HITS_MASK equ %00010000
 
 ; MO5 keyboard matrix selectors. Bits 4-6 choose an inverted matrix line and
 ; bits 1-3 choose the column; bit 7 reads active-low. S/Q double as AZERTY
@@ -88,6 +90,7 @@ KEY_FIRE_SELECTOR       equ     $40
 KEY_FLASH_SELECTOR      equ     $50
 KEY_NEXT_ROOM_SELECTOR  equ     $00
 KEY_INFINITE_LIVES_SELECTOR equ $18
+KEY_DISABLE_GUARDIAN_HITS_SELECTOR equ $36
 KEY_CHEAT_U_SELECTOR    equ     $08
 KEY_CHEAT_E_SELECTOR    equ     $3A
 KEY_CHEAT_P_SELECTOR    equ     $38
@@ -109,9 +112,9 @@ STATUS_TEXT_CELLS       equ     38
 HUD_TEXT_COL            equ     11
 HUD_TEXT_ROW            equ     0
 LIVES_TEXT_ROW          equ     1
-LIVES_DISPLAY_CELLS     equ     3
+LIVES_DISPLAY_CELLS     equ     5
 LIVES_CLEAR_START_COL   equ     (TEXT_COLUMNS-LIVES_DISPLAY_CELLS)/2
-HUD_INDICATOR_CLEAR_CELLS equ   5
+HUD_INDICATOR_CLEAR_CELLS equ   7
 
 ; Tile values
 TILE_FLOOR              equ     '.'
@@ -140,6 +143,8 @@ TITLE_SCENE_FRAME_LEFT_COL equ  4
 TITLE_SCENE_FRAME_TOP_ROW equ   6
 TITLE_SCENE_FRAME_WIDTH equ     32
 TITLE_SCENE_FRAME_HEIGHT equ    3
+TITLE_DEV_VERSION_COL   equ     TITLE_SCENE_FRAME_LEFT_COL+TITLE_SCENE_FRAME_WIDTH-15
+TITLE_DEV_VERSION_ROW   equ     TITLE_SCENE_FRAME_TOP_ROW+TITLE_SCENE_FRAME_HEIGHT
 TITLE_SCENE_DIAMOND_LEFT_COL equ 8
 TITLE_SCENE_DIAMOND_RIGHT_COL equ 10
 TITLE_SCENE_DIAMOND_LEFT_PIXEL_X equ 64
@@ -193,7 +198,8 @@ PLAYER_DIR_UP           equ     DPAD_UP_MASK
 PLAYER_DIR_DOWN         equ     DPAD_DOWN_MASK
 PLAYER_DIR_LEFT         equ     DPAD_LEFT_MASK
 PLAYER_DIR_RIGHT        equ     DPAD_RIGHT_MASK
-PLAYER_START_LIVES      equ     3
+PLAYER_START_LIVES      equ     5
+EXTRA_LIFE_SCORE_TEN_THOUSANDS equ 2
 PLAYER_INVULNERABLE_FRAMES equ  45
 PLAYER_INVULNERABLE_BLINK_DELAY equ 4
 PLAYER_DEATH_EFFECT_FRAMES equ  15
@@ -212,10 +218,10 @@ FRAME_DELAY_INNER       equ     160
 FRAME_DELAY_ITERATIONS  equ     2907
 FRAME_DELAY_EXTRA_ENEMY_ITERATIONS equ 200
 ; Guardian speed uses eightieth-pixel units selected from EnemySpeedByRoom.
-; The flattened table rises smoothly from 126/80 (70% of the explorer) in
-; Stage 1 Room 1 to 162/80 (90%) in Stage 9 Room 3.
+; The flattened table currently keeps every room at 126/80 (70% of the
+; explorer) while speed progression is disabled.
 ENEMY_SPEED_SCALE       equ     80
-ENEMY_INITIAL_SPAWN_STAGGER equ 10
+ENEMY_INITIAL_SPAWN_STAGGER equ 20
 ENEMY_RESPAWN_BASE      equ     75
 ENEMY_RESPAWN_STAGGER   equ     12
 ENEMY_HIT_EFFECT_FRAMES equ     8

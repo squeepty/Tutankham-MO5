@@ -138,8 +138,8 @@ next stage or campaign completion.
 ## Timing and difficulty calibration
 
 The current explorer cadence is 2, 2, 2, 3 pixels per frame. Guardian speed
-increases strictly from 126/80 to 162/80 pixels per frame across the 21-room
-sequence.
+progression is temporarily disabled: every room uses 126/80 units, or 70% of
+the explorer's average speed.
 
 Measure on a target-speed emulator and, if available, physical hardware:
 
