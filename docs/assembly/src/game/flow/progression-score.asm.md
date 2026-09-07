@@ -26,7 +26,8 @@ Demo completion returns directly to the title instead.
 
 The key survives intermediate room changes within a stage and is cleared only
 when advancing to the next stage. The flash inventory also survives room
-changes; it is a run resource rather than a per-room resource.
+changes within a stage. Advancing to the next stage restores one flash bomb,
+including when the previous stage's flash was spent; unused flashes do not stack.
 
 ## Coordinate and map helpers
 

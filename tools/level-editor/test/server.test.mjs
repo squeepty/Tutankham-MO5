@@ -54,3 +54,12 @@ test("rejects a stale editor revision without writing", async () => {
     assert.match((await response.json()).error, /changed after the editor loaded/);
   });
 });
+
+test("serves the shared preview module as executable JavaScript", async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/room-art.mjs`);
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get("content-type"), /^text\/javascript/);
+    assert.match(await response.text(), /export function doorCells/);
+  });
+});

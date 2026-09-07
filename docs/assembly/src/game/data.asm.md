@@ -22,6 +22,10 @@ specialized number renderer. The set covers title/high-score presentation,
 controls, stage introductions, game-over/completion screens, HUD labels, and
 short status explanations for gameplay events.
 
+`ChamberNamePointers` maps the nine campaign indices to Chamber of Ra, Anubis,
+Horus, Bastet, Sobek, Sekhmet, Osiris, Thoth, and Tutankhamun. The intro screen
+centers the selected full name instead of displaying a stage number.
+
 The treasure strings encode a game rule as user feedback: consecutive room
 pickups award 500, 1,000, then 1,500 points. Status messages are deliberately
 data, allowing wording changes without touching control flow. Fixed-position
@@ -40,7 +44,9 @@ values, which keeps repeated letters and release handling straightforward.
 
 Cell art consists of eight bytes, one bitmap byte per scanline. Walls, exits,
 keys, treasure, nests, warps, projectiles, hit effects, life icons, and flash
-indicators can therefore use the generic cell renderer.
+indicators can therefore use the generic cell renderer. The compact title-screen
+`V1` mark also keeps both characters in one cell so it is drawn as a single
+sprite rather than as text.
 
 Moving actors need horizontal pixel precision. Their tables contain pre-shifted
 8-row frames, indexed by `pixelX AND 7`. A nonzero phase spills into the next
@@ -115,3 +121,17 @@ contracts are structural:
 When adding artwork or room fields, document the table stride beside both the
 producer and consumer. A misplaced `fcb` does not produce a type error—it turns
 all following index calculations into valid reads of the wrong bytes.
+
+`WallSymbolPatterns` contains six 16×8 engraved stone designs (ankh, Eye of
+Horus, scarab, pyramid, sun disk, lotus), stored as two consecutive 8×8 cells.
+`RoomWallDecorationPointers` indexes ten fixed random X/Y/symbol triples for
+each of the 21 rooms using `CurrentStageRoomIndex`. Placements do not overlap,
+use existing wall pairs, and include every design in each room. Rendering checks
+both wall cells so map changes cannot draw an engraving across a passage.
+
+`CellDoorYellow` and `CellDoorRed` store 16×16 arcade-inspired double doors,
+in top-left, top-right, bottom-left, bottom-right cell order. The renderer
+selects yellow for odd-numbered stages and red for even-numbered stages.
+`TryDrawExitDoor` samples the paired exit markers to the left of each drawn
+cell, keeping partial redraws consistent and clipping naturally at the map
+edge. These are visual additions; exit interaction still uses the `D` tiles.

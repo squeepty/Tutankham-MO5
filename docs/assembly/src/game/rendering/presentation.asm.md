@@ -13,7 +13,7 @@ room renderer.
 
 `DrawTitleScreen` clears both planes, draws the logo, decorative treasures,
 subtitle, three high-score templates, play prompt, controls, framed animation
-band, version text, and—when session-unlocked—the cheat notice. Each score
+band, the single-cell `V1` version sprite, and—when session-unlocked—the cheat notice. Each score
 template already contains trailing zeroes; `DrawPresentationScore` overwrites
 only its three significant digits.
 
@@ -53,13 +53,19 @@ constant, so its destination calculation is smaller.
 
 ## Stage and terminal screens
 
-`DrawLevelIntroScreen` displays the one-based stage digit, the key objective,
+`DrawLevelIntroScreen` selects the chamber name from `ChamberNamePointers`,
+centers it on the text grid, and displays the key objective,
 and a one/two/three-room message selected from `StageRoomCounts`. A key cell
-reinforces the rule visually.
+reinforces the rule visually. All intro text uses `DrawCenteredIntroString`
+to derive its column from the string length, rounding half-cell positions up.
+The key icon uses the same centering convention.
 
 Completion and game-over use a shared `DrawFinalScores` path. They display the
 current score, recorded high score, optional new-high-score notice, and a Fire
-prompt. Separate top-level routines differ mainly in title text.
+prompt. Separate top-level routines differ mainly in title text. Completion and game-over
+lines are centered on the 40-column text grid, rounding half-cell positions up;
+score digit positions are derived from the centered template columns. The
+return-to-title prompt has a one-column left adjustment on both end screens.
 
 `DrawPresentationScore` splits the 0–99 hundreds byte with the HUD helper, then
 draws the ten-thousands, tens, and ones digits at a writable column/row cursor.

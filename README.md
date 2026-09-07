@@ -1,24 +1,16 @@
 # Tutankham for Thomson MO5
 
-An original Motorola 6809 implementation of the maze-action structure of
-Konami's *Tutankham*, written for the Thomson MO5. The opening seven rooms adapt
-the four arcade maze layouts from the supplied ASCII reference; the game uses
-original graphics, code, and one-bit sound effects, with no arcade ROM data or
-extracted assets.
+Release 1
 
-The current build contains nine variable-length stages and 21 playable rooms.
-It includes the title and attract sequence, keyboard and
-joystick controls, projectiles, guardians, keys, treasures, warps, room gates,
-stage doors, scoring, lives, high scores, sound, and a guarded title-screen
-cheat.
+This is a clean-room recreation for the Thomson MO5. It takes design inspiration
+from the original arcade game's rhythm and event structure, while using original
+source code, MO5 pixel artwork, and sound synthesis. The opening maps adapt
+arcade layouts; door artwork was hand-authored from visual references, with no
+ROM extraction.
 
-## Terminology
+## Rooms
 
-Player-facing documentation identifies every location by stage and room.
-“Screen” is used only as a secondary sequential number when it helps locate old
-test notes.
-
-| Player-facing name | Sequential screen | Layout origin |
+| Room | Sequential screen | Layout origin |
 | --- | ---: | --- |
 | Stage 1, Room 1 | 1 | Arcade Level 1 |
 | Stage 2, Rooms 1–2 | 2–3 | Arcade Level 2, left/right |
@@ -30,51 +22,11 @@ test notes.
 | Stage 8, Rooms 1–3 | 16–18 | Original MO5 screens 10–12 |
 | Stage 9, Rooms 1–3 | 19–21 | Original MO5 screens 13–15 |
 
-Some internal symbols retain the earlier naming convention:
-
-- `CurrentLevel` and `LEVEL_COUNT` mean the zero-based stage number.
-- `CurrentRoom` is the zero-based room within that variable-length stage.
-- `CurrentStageRoomIndex` is the flattened room index from 0 through 20.
-- `StageRoomOffsets` and `StageRoomCounts` define the nine stage boundaries.
-- `LEVEL_WIDTH` and `LEVEL_HEIGHT` describe one room's 30×22 tile grid.
-
-New documentation and player-visible text should use **stage** and **room**.
-
-## Gameplay
-
-Guide the explorer through each maze, collect treasure, take the stage key, and
-reach the exit:
-
-- Every room contains three treasures. Collecting them without dying builds a
-  room-local score streak: the first is worth 500 points, the second 1000, and
-  the third 1500. Death or entering another room resets the multiplier.
-- Room 1 of each stage contains that stage's key.
-- Every non-final room contains a gate to the next room.
-- The final room of each stage contains the stage door. Stage 1 therefore has
-  its key and stage door in its only room.
-- The explorer must hold the key before a gate or stage door opens.
-- Five guardians emerge from three two-cell nests in each room; the fourth and
-  fifth guardians reuse cleared nest locations. Their fixed behavioral roles
-  include direct chase, look-ahead interception, and alternating wander/chase
-  behavior.
-- The explorer can fire left or right, but not vertically.
-- Warps appear as paired up/down destinations and move the explorer between
-  their aligned endpoints.
-- Score and lives carry across rooms and stages. Each run starts with five
-  lives, each life receives one flash bomb, and reaching 20000 points awards
-  one extra life for the run. The stage key is refreshed when a new stage begins.
-- The three highest scores remain available for the loaded session. Attract-mode
-  demonstration scores are never recorded.
-
-Guardian speed progression is currently disabled. Guardians move at 1.575
-pixels per frame in every room, 70% of the explorer's 2.25-pixel-per-frame
-average.
-
 ## Controls
 
 | Action | Keyboard | Joystick |
 | --- | --- | --- |
-| Move | Arrow keys or `Z`/`S`/`Q`/`D` | Direction |
+| Move | Arrow keys | Direction |
 | Fire | `Space` | Fire button |
 | Use the flash bomb | `X` | — |
 | Start from title | `Space` | Fire button |
@@ -90,14 +42,6 @@ After unlocking:
 - `D` disables guardian contact hits on the explorer for the current run.
 - `I` enables infinite lives for the current run.
 - `N` enters the next room or stage through the current exit.
-
-Before `SQUEEPTY` is accepted, `D` remains only the right-movement alias, while
-`I` and `N` are ignored. The title confirms the unlock with
-`CHEATS UNLOCKED N NEXT`; it intentionally does not advertise the other cheat
-keys.
-
-If the title remains idle for about ten seconds, a non-interactive demonstration
-runs for about thirty seconds before returning to the title.
 
 ## Build
 
@@ -136,6 +80,18 @@ Generated files are placed in `build/`:
 
 `build/maps-packed.asm` is generated. Edit the readable templates in
 `src/game/data.asm`, never the packed include.
+
+## Release candidate and previews
+
+```sh
+node tools/prepare-release.mjs
+```
+
+This tests, builds, refreshes all room previews, and packages source and binaries
+with a manifest and checksums under `build/`. It does not publish a release.
+For previews only, run `node tools/export-level-images.mjs`; all 21 PNGs are
+written to [`levels_current`](levels_current). These are rendered from source,
+not captured from an emulator.
 
 ## Run
 
@@ -186,12 +142,18 @@ Each template is exactly 30 characters wide by 22 rows high. Its symbols are:
 | `R` | Vertical gate to the next room |
 | `D` | Vertical door to the next stage |
 
+Wall artwork includes six engraved bricks with ten fixed placements per room.
+Stage doors alternate yellow/red and clip at the map edge; their surrounding
+cells are walls. Room arrows occupy column 28 with two open cells in column 29.
+The editor reads the same artwork as the game, and its door preview shares
+clipping logic with the PNG exporter.
+
 To change a room:
 
 1. Edit its readable template in `src/game/data.asm`.
 2. Keep its start coordinates and guardian origins aligned with the template
    tables later in the same file.
-3. Run `node tools/validate-content.mjs` for focused feedback.
+3. Run `node tools/validate-content.mjs src/game/data.asm` for focused feedback.
 4. Run `./tools/build.sh` to regenerate packed maps and the distributable images.
 5. Play the affected room and its incoming/outgoing transition in an emulator.
 
@@ -256,8 +218,7 @@ accepted.
 | `tools/build.sh` | Reproducible validation, build, packaging, and size guard |
 | `docs/assembly/README.md` | Educational, file-by-file 6809 assembly handbook |
 | `docs/ARCHITECTURE.md` | Runtime and data-design reference |
-| `docs/NEXT_STEPS.md` | Verification backlog and release checklist |
-| `prompt.md` | Audio direction and event-to-cue mapping |
+| `tools/prepare-release.mjs` | Tested source/binary release-candidate archive |
 
 ## Implementation notes
 
@@ -275,9 +236,3 @@ For an educational walkthrough of every assembly file—including logic,
 algorithms, data structures, game rules, rendering, and register contracts—see
 the [`docs/assembly` handbook](docs/assembly/README.md). For the system-level
 runtime and data contracts, see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
-
-## Project provenance
-
-This is a clean-room recreation for the Thomson MO5. It takes design inspiration
-from the original arcade game's rhythm and event structure, while using original
-source code, maps, graphics, and sound synthesis.

@@ -3,7 +3,8 @@
 ;
 ; Register contract for exported entries:
 ;   TryRoomTransition/TryPlayerExit/SyncPlayerPixelPosition/ClearCandidateTile:
-;     Inputs: none. Outputs: progression, position, or map state in memory.
+;     Inputs: shared state; ClearCandidateTile uses CandidateX/Y.
+;     Outputs: progression, position, or map state in memory.
 ;   AddScore: Inputs A = award in hundreds. Outputs score/life state in memory.
 ;   RecordHighScore: Inputs none. Outputs ordered high-score state in memory.
 ;   CompareScoreToX: Inputs X = high/low score pair. Outputs unsigned CC flags
@@ -12,6 +13,8 @@
 ;==============================================================================
 
 TryRoomTransition:
+        ; Caller must hold HasKey for intermediate rooms; TryPlayerExit checks
+        ; it locally for final rooms. Room changes preserve key/flash inventory.
         ; N reaches this same path after supplying HasKey, so the development
         ; shortcut cannot bypass transition drawing or stage completion rules.
         ldb     CurrentLevel
@@ -62,6 +65,7 @@ TryPlayerExit:
         clr     CurrentRoom
         clr     HasKey
         lda     #1
+        sta     FlashAvailable          ; Refill once when advancing to the next stage.
         sta     PlayerFacing
         sta     PlayerVisible
         clr     PlayerInvulnerabilityTimer
@@ -99,7 +103,6 @@ TryPlayerExitLocked:
 
 ; Synchronize sub-cell state after reset, respawn, or an instantaneous warp.
 SyncPlayerPixelPosition:
-        ; Use after room load, death respawn, or warp to discard sub-cell state.
         lda     PlayerX
         lsla
         lsla

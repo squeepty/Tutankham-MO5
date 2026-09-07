@@ -388,6 +388,12 @@ maps.forEach((rows, roomIndex) => {
   const gateTile = isFinalRoom ? "D" : "R";
   const gates = positions(rows, gateTile);
   assert(gates.length === 2, `${name} must contain a two-cell ${gateTile} gate`);
+  if (gateTile === "R") {
+    assert(
+      gates.every(([x, y]) => x === 28 && rows[y][29] === "."),
+      `${name} arrow exit must be in column 28 with open floor to its right`,
+    );
+  }
   for (const position of positions(rows, "K")) {
     assert(
       gates.every(

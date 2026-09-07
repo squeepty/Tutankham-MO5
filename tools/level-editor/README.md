@@ -14,7 +14,7 @@ another local port.
 
 ## Editing workflow
 
-- Choose a stage and room in the left rail.
+- Choose a named chamber and room in the left rail.
 - Drag the wall or floor tools to reshape the maze. `Double terrain rows` is on
   by default because the game collapses pairs of physical rows into one logical
   maze row.
@@ -40,3 +40,33 @@ run `./tools/build.sh` after saving to regenerate it and build the game.
 ```sh
 node --test tools/level-editor/test/*.test.mjs
 ```
+
+Chamber names are read from `ChamberNamePointers` in `src/game/data.asm`,
+so the editor follows the game’s names and campaign order. Imported drafts
+retain the current source names.
+
+Each of the 21 room maps contains ten fixed, randomly scattered wall engravings:
+ankh, Eye of Horus, scarab, pyramid, sun disk, and lotus. All six designs appear
+in every room. `RoomWallDecorationPointers` in `src/game/data.asm` selects each
+room's ten X/Y/symbol triples. Each engraving spans two horizontal wall cells;
+the game, editor, and image exporter hide it if either cell is no longer a wall.
+Decorations do not alter collision or the readable map tiles.
+
+End-of-level `D` marker pairs also preview a 2×2 arcade-style double door
+immediately to their right. Odd-numbered stages use yellow, even-numbered
+stages use red. At the right map edge, only the left half is drawn if one
+column remains. Artwork is read from `CellDoorYellow` / `CellDoorRed`; marker
+positions and exit behavior stay in the source map.
+
+The Exit tool selects `D` or `R` from the chamber's actual room count.
+Room-transition arrows (`R`) snap to column 28, immediately left of the
+right boundary. Placing or moving an arrow opens both corresponding cells in column 29
+to show the passage. Validation and saving enforce this rule.
+
+Door previews use `public/room-art.mjs`, shared with the PNG exporter. Changes
+to assembly bitmaps appear on reload. Rebuild the game after saving maps and
+run `node tools/export-level-images.mjs` to refresh the tracked previews.
+
+Documentation checks run with `node tools/validate-docs.mjs` from the repository
+root and are included in release preparation. They verify local Markdown file
+links and assembly handbook coverage.

@@ -106,11 +106,11 @@ DrawTitleScreen:
         jsr     DrawTitleSceneFrame
         jsr     DrawTitleScene
         lda     #COLOR_DEV_VERSION
-        sta     TextColor
-        ldu     #TitleDevVersionText
-        lda     #TITLE_DEV_VERSION_COL
-        ldb     #TITLE_DEV_VERSION_ROW
-        jsr     DrawString
+        sta     DrawCellColor
+        ldu     #CellTitleVersionV1
+        lda     #TITLE_VERSION_SPRITE_COL
+        ldb     #TITLE_VERSION_SPRITE_ROW
+        jsr     DrawCellPattern
         tst     CheatUnlocked
         beq     DrawTitleScreenDone
         jmp     DrawTitleCheatUnlocked
@@ -355,29 +355,21 @@ DrawTitleSceneShiftedColorLeftOnly:
         jmp     SelectBitmapPlane
 
 DrawLevelIntroScreen:
-        ; CurrentLevel is the legacy zero-based stage index shown as 1-9.
+        ; CurrentLevel selects the chamber name in campaign order.
         jsr     ClearScreen
         lda     #COLOR_TITLE
         sta     TextColor
-        ldu     #LevelIntroTitleText
-        lda     #16
+        ldx     #ChamberNamePointers
+        ldb     CurrentLevel
+        lslb
+        ldu     b,x
         ldb     #8
-        jsr     DrawString
-        lda     CurrentLevel
-        inca
-        adda    #'0'
-        sta     HudCharacter
-        lda     #22
-        ldb     #8
-        jsr     CellAddress
-        lda     HudCharacter
-        jsr     DrawGlyphAtX
+        jsr     DrawCenteredIntroString
         lda     #COLOR_TEXT
         sta     TextColor
         ldu     #LevelIntroGoalText
-        lda     #14
         ldb     #12
-        jsr     DrawString
+        jsr     DrawCenteredIntroString
         ldb     CurrentLevel
         ldx     #StageRoomCounts
         lda     b,x
@@ -386,31 +378,44 @@ DrawLevelIntroScreen:
         cmpa    #2
         beq     DrawLevelIntroTwoRooms
         ldu     #LevelIntroThreeRoomsText
-        lda     #11
         bra     DrawLevelIntroRoomCount
 DrawLevelIntroOneRoom:
         ldu     #LevelIntroOneRoomText
-        lda     #12
         bra     DrawLevelIntroRoomCount
 DrawLevelIntroTwoRooms:
         ldu     #LevelIntroTwoRoomsText
-        lda     #12
 DrawLevelIntroRoomCount:
         ldb     #15
-        jsr     DrawString
+        jsr     DrawCenteredIntroString
         lda     #COLOR_KEY
         sta     DrawCellColor
         ldu     #CellKey
-        lda     #19
+        lda     #(TEXT_COLUMNS-1+1)/2
         ldb     #18
         jmp     DrawCellPattern
+
+; Input: U = zero-terminated text, B = row. Center on the text grid,
+; rounding half-cell positions up consistently for every intro line.
+DrawCenteredIntroString:
+        pshs    b
+        tfr     u,x
+        lda     #TEXT_COLUMNS+1
+DrawCenteredIntroStringLength:
+        ldb     ,x+
+        beq     DrawCenteredIntroStringReady
+        deca
+        bra     DrawCenteredIntroStringLength
+DrawCenteredIntroStringReady:
+        lsra
+        puls    b
+        jmp     DrawString
 
 DrawCompleteScreen:
         jsr     ClearScreen
         lda     #COLOR_TITLE
         sta     TextColor
         ldu     #CompleteScreenTitleText
-        lda     #13
+        lda     #(TEXT_COLUMNS-13+1)/2
         ldb     #5
         jsr     DrawString
         jsr     DrawFinalScores
@@ -422,28 +427,29 @@ DrawCompleteScreen:
         jsr     DrawString
 DrawCompletePrompt:
         ldu     #ReturnTitleText
-        lda     #10
+        lda     #(TEXT_COLUMNS-19+1)/2-1
         ldb     #19
         jmp     DrawString
 
 DrawGameOverScreen:
+        ; Center each full line on the 40-column grid, rounding half cells up.
         jsr     ClearScreen
         lda     #COLOR_TITLE
         sta     TextColor
         ldu     #GameOverScreenTitleText
-        lda     #15
+        lda     #(TEXT_COLUMNS-9+1)/2
         ldb     #5
         jsr     DrawString
         jsr     DrawFinalScores
         tst     NewHighScoreFlag
         beq     DrawGameOverPrompt
         ldu     #NewHighScoreText
-        lda     #13
+        lda     #(TEXT_COLUMNS-14+1)/2
         ldb     #15
         jsr     DrawString
 DrawGameOverPrompt:
         ldu     #ReturnTitleText
-        lda     #10
+        lda     #(TEXT_COLUMNS-19+1)/2-1
         ldb     #19
         jmp     DrawString
 
@@ -451,10 +457,10 @@ DrawFinalScores:
         lda     #COLOR_TEXT
         sta     TextColor
         ldu     #FinalScoreText
-        lda     #15
+        lda     #(TEXT_COLUMNS-11+1)/2
         ldb     #9
         jsr     DrawString
-        lda     #21
+        lda     #(TEXT_COLUMNS-11+1)/2+6
         sta     PresentationNumberColumn
         lda     #9
         sta     PresentationNumberRow
@@ -463,10 +469,10 @@ DrawFinalScores:
         jsr     DrawPresentationScore
 
         ldu     #FinalHighScoreText
-        lda     #12
+        lda     #(TEXT_COLUMNS-16+1)/2
         ldb     #12
         jsr     DrawString
-        lda     #23
+        lda     #(TEXT_COLUMNS-16+1)/2+11
         sta     PresentationNumberColumn
         lda     #12
         sta     PresentationNumberRow

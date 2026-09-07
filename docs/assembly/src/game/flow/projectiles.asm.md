@@ -53,7 +53,8 @@ awards 100 points. Inactive guardians are not scored again and retain their
 existing respawn schedule. The HUD and indicator are updated once after the
 loop. Attempting to reuse the bomb only displays the unavailable message.
 
-Each new life restores one flash bomb; changing rooms does not.
+Each new life and each new stage restores one flash bomb; changing rooms
+within a stage does not. Unused bombs do not stack.
 
 ## Register contracts
 

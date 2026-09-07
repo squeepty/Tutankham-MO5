@@ -277,9 +277,10 @@ Every room has three two-cell guardian nests and three treasures.
   therefore holds both the key and final door.
 
 The key remains owned across all rooms of a stage. Entering the next stage
-refreshes the key state while preserving the run's score, remaining lives, and
-current flash supply. A flash bomb is supplied at run start and after each
-non-final death, so every playable life receives exactly one.
+clears the key, preserves the run's score and remaining lives, and restores
+the flash supply to one. A flash bomb is also supplied at run start
+and after each non-final death. Intermediate room changes preserve its current
+availability; unused bombs do not accumulate.
 
 Warp endpoints are paired by direction. The destination lookup must land on
 walkable content with a valid escape path.
@@ -509,7 +510,7 @@ routes remain fully checked.
 2. Generate `build/maps-packed.asm`.
 3. Assemble at `$4000` to raw binary, listing, and symbol map.
 4. Create a DECB `LOADM` image.
-5. Wrap the raw image in Thomson K7 blocks.
+5. Convert the DECB load/execute records into Thomson K7 blocks.
 6. Check the `$9800` upper boundary and write emulator loading notes.
 
 `tools/make-k7.mjs` emits Thomson cassette blocks with leader, filename,

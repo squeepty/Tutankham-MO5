@@ -33,7 +33,8 @@ stores the target and starts an eight-pixel transaction.
 
 Actions use rising edges and are processed after movement work. The development
 next-room action supplies the key and enters the real transition path. Fire
-allocates a projectile; flash consumes the run's single bomb.
+allocates a projectile; flash consumes the currently available bomb. Respawn and stage advancement
+restore it; room transitions do not.
 
 ## Fractional-speed algorithm
 

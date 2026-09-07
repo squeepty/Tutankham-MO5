@@ -1,3 +1,5 @@
+import { doorCells, exitTileFor } from "./room-art.mjs";
+
 const WIDTH = 30;
 const HEIGHT = 22;
 const CELL = 32;
@@ -7,12 +9,12 @@ const toolDefinitions = {
   move: { shortcut: "M", hint: "Choose an object, then click its new cell." },
   wall: { shortcut: "1", hint: "Drag to paint walls. Right-click to erase." },
   floor: { shortcut: "2", hint: "Drag to clear cells back to walkable floor." },
-  treasure: { shortcut: "T", hint: "Click to place a treasure. Rooms need 3 or 4." },
-  key: { shortcut: "K", hint: "Click to move the unique stage key into this room." },
+  treasure: { shortcut: "T", hint: "Click to place a treasure. Each room needs 3." },
+  key: { shortcut: "K", hint: "Click to move the unique chamber key into this room." },
   spawner: { shortcut: "S", hint: "Click to place a two-cell nest. Each room needs 3." },
   warpDown: { shortcut: "V", hint: "Place the upper, downward warp endpoint." },
   warpUp: { shortcut: "A", hint: "Place the lower, upward warp endpoint." },
-  exit: { shortcut: "E", hint: "Place the two-cell room gate or final stage door." },
+  exit: { shortcut: "E", hint: "Place the two-cell room gate or final chamber door." },
   start: { shortcut: "P", hint: "Click a clear floor cell for the player start." },
 };
 
@@ -223,6 +225,7 @@ function withEdit(callback) {
 }
 
 function placePair(room, tile, x, y) {
+  if (tile === "R") x = WIDTH - 2;
   const top = pairedTop(y);
   if (top <= 0 || top >= HEIGHT - 1) {
     toast("Two-cell objects must sit inside the room border.", "error");
@@ -232,6 +235,10 @@ function placePair(room, tile, x, y) {
   clearObjectAt(room, x, top + 1);
   setCell(room, x, top, tile);
   setCell(room, x, top + 1, tile);
+  if (tile === "R") {
+    setCell(room, WIDTH - 1, top, ".");
+    setCell(room, WIDTH - 1, top + 1, ".");
+  }
   return true;
 }
 
@@ -262,7 +269,7 @@ function applyToolAt(x, y, tool = state.activeTool) {
       spawner: "S",
       warpDown: "V",
       warpUp: "A",
-      exit: state.currentRoom === 2 ? "D" : "R",
+      exit: exitTileFor(room, state.project.stageRoomCounts),
     }[tool];
     if (!tile) return false;
     const top = pairedTop(y);
@@ -313,7 +320,7 @@ function objectsForRoom(room) {
     ["V", "Warp down", "↓", true],
     ["A", "Warp up", "↑", true],
     ["R", "Room exit", "⇥", true],
-    ["D", "Stage exit", "⇥", true],
+    ["D", "Chamber exit", "⇥", true],
   ];
   for (const [tile, label, symbol, paired] of definitions) {
     const positions = paired ? pairedPositions(room, tile) : positionsOf(room, tile);
@@ -367,7 +374,7 @@ function moveSelectedObject(x, y) {
     }
     clearObjectAt(room, object.x, object.y);
     if (!placePair(room, object.tile, x, y)) return false;
-    state.selectedObject.id = `${object.tile}:${x}:${top}`;
+    state.selectedObject.id = `${object.tile}:${object.tile === "R" ? WIDTH - 2 : x}:${top}`;
   } else {
     clearObjectAt(room, object.x, object.y);
     clearObjectAt(room, x, y);
@@ -414,11 +421,11 @@ function roomChecks(room, roomWithinStage, roomCount) {
     },
     {
       label: "Treasures",
-      detail: `${treasureCount} / 3–4`,
-      ok: treasureCount >= 3 && treasureCount <= 4,
+      detail: `${treasureCount} / 3`,
+      ok: treasureCount === 3,
     },
     {
-      label: "Stage key",
+      label: "Chamber key",
       detail: `${keyCount} / ${roomWithinStage === 0 ? 1 : 0}`,
       ok: keyCount === (roomWithinStage === 0 ? 1 : 0),
     },
@@ -428,9 +435,11 @@ function roomChecks(room, roomWithinStage, roomCount) {
       ok: spawnerTiles === 6 && spawners.length === 3 && startsMatch,
     },
     {
-      label: isFinalRoom ? "Stage exit" : "Room exit",
+      label: isFinalRoom ? "Chamber exit" : "Room exit",
       detail: `${exits.length} / 1`,
-      ok: exits.length === 1 && positionsOf(room, expectedExit).length === 2 && wrongExit === 0,
+      ok: exits.length === 1 && positionsOf(room, expectedExit).length === 2 && wrongExit === 0
+        && (isFinalRoom || exits.every(({ x, y }) => x === WIDTH - 2
+          && cellAt(room, WIDTH - 1, y) === "." && cellAt(room, WIDTH - 1, y + 1) === ".")),
     },
     {
       label: "Warp pair",
@@ -614,6 +623,24 @@ function drawCanvas() {
     }
   }
 
+  if (room.wallDecorations) {
+    for (const { x, y, symbol } of room.wallDecorations) {
+      if (cellAt(room, x, y) !== "#" || cellAt(room, x + 1, y) !== "#") continue;
+      const bitmap = state.project.wallSymbols[symbol].bitmap;
+      const pixel = CELL / 8;
+      context.fillStyle = "#080a09";
+      context.fillRect(x * CELL, y * CELL, CELL * 2, CELL);
+      context.fillStyle = colors[2];
+      bitmap.forEach((byte, index) => {
+        const row = index % 8;
+        const half = Math.floor(index / 8);
+        for (let col = 0; col < 8; col += 1) {
+          if (byte & (128 >> col)) context.fillRect((x + half) * CELL + col * pixel, y * CELL + row * pixel, pixel, pixel);
+        }
+      });
+    }
+  }
+
   for (let y = 0; y < HEIGHT; y += 1) {
     for (let x = 0; x < WIDTH; x += 1) {
       const tile = cellAt(room, x, y);
@@ -628,6 +655,20 @@ function drawCanvas() {
         drawItem(tile, x, y, false);
       }
     }
+  }
+
+  for (const cell of doorCells(room, state.project.doorSprites)) {
+    const pixel = CELL / 8;
+    context.fillStyle = "#080a09";
+    context.fillRect(cell.x * CELL, cell.y * CELL, CELL, CELL);
+    context.fillStyle = cell.color;
+    cell.bitmap.forEach((byte, row) => {
+      for (let col = 0; col < 8; col += 1) {
+        if (byte & (128 >> col)) {
+          context.fillRect(cell.x * CELL + col * pixel, cell.y * CELL + row * pixel, pixel, pixel);
+        }
+      }
+    });
   }
 
   context.lineWidth = 1;
@@ -691,9 +732,9 @@ function renderNavigation() {
     if (Array.from({ length: roomCount }, (_, room) => dirty.has(offset + room)).some(Boolean)) {
       button.classList.add("dirty");
     }
-    button.textContent = String(stage + 1).padStart(2, "0");
+    button.textContent = state.project.chamberNames[stage];
     button.dataset.stage = stage;
-    button.setAttribute("aria-label", `Stage ${stage + 1}`);
+    button.setAttribute("aria-label", state.project.chamberNames[stage]);
     elements.stageList.append(button);
   }
 
@@ -792,7 +833,7 @@ function renderToolState() {
 function renderRoomDetails() {
   if (!state.project) return;
   const room = currentRoom();
-  elements.roomBreadcrumb.textContent = `Stage ${room.stage} · Room ${room.room}`;
+  elements.roomBreadcrumb.textContent = `${state.project.chamberNames[room.stage - 1]} · Room ${room.room}`;
   elements.roomTitle.textContent = `${room.name} layout`;
   renderChecks();
   renderObjects();
@@ -1006,7 +1047,7 @@ function validateImportedProject(project) {
     JSON.stringify(project.stageRoomCounts) !==
     JSON.stringify(state.project.stageRoomCounts)
   ) {
-    throw new Error("The draft’s stage structure does not match this campaign.");
+    throw new Error("The draft’s chamber structure does not match this campaign.");
   }
   for (const room of project.rooms) {
     if (!Array.isArray(room.tiles) || room.tiles.length !== HEIGHT || room.tiles.some((row) => typeof row !== "string" || row.length !== WIDTH || !/^[#.KTSVARD]+$/.test(row))) {
@@ -1042,7 +1083,17 @@ async function importDraft(file) {
     const payload = JSON.parse(await file.text());
     const project = payload.project ?? payload;
     validateImportedProject(project);
-    state.project = clone(project);
+    const imported = clone(project);
+    imported.chamberNames = [...state.project.chamberNames];
+    imported.doorSprites = clone(state.project.doorSprites);
+    imported.wallSymbols = clone(state.project.wallSymbols);
+    imported.rooms.forEach((room, index) => {
+      room.wallDecorations = clone(state.project.rooms[index].wallDecorations);
+      room.name = state.project.rooms[index].name;
+      room.stage = state.project.rooms[index].stage;
+      room.room = state.project.rooms[index].room;
+    });
+    state.project = imported;
     state.history = [];
     state.future = [];
     state.selectedObject = null;

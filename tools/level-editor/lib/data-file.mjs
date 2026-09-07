@@ -53,7 +53,7 @@ function templateRows(source, label) {
   ].map((match) => match[1]);
 }
 
-function roomName(index, stageRoomOffsets, stageRoomCounts) {
+function roomName(index, stageRoomOffsets, stageRoomCounts, chamberNames) {
   let stageIndex = 0;
   while (
     stageIndex + 1 < stageRoomCounts.length &&
@@ -63,7 +63,7 @@ function roomName(index, stageRoomOffsets, stageRoomCounts) {
   }
   const stage = stageIndex + 1;
   const room = index - stageRoomOffsets[stageIndex] + 1;
-  return { stage, room, name: `Stage ${stage}, Room ${room}` };
+  return { stage, room, name: `${chamberNames[stageIndex]}, Room ${room}` };
 }
 
 export function parseGameData(source) {
@@ -75,6 +75,14 @@ export function parseGameData(source) {
   const wallColors = directiveEntries(source, "RoomWallColors", "fcb");
   const stageRoomOffsets = numericFcbValues(source, "StageRoomOffsets");
   const stageRoomCounts = numericFcbValues(source, "StageRoomCounts");
+  const chamberNames = directiveEntries(source, "ChamberNamePointers", "fdb").map(label => {
+    const text = /fcc\s+"([^"]+)"/.exec(blockFor(source, label))?.[1];
+    if (!text) throw new Error(`Missing chamber name in ${label}`);
+    return text.toLowerCase().replace(/\b\w/g, letter => letter.toUpperCase()).replace(" Of ", " of ");
+  });
+  if (chamberNames.length !== stageRoomCounts.length) {
+    throw new Error("Chamber names do not match the campaign structure");
+  }
 
   if (stageRoomOffsets.length !== stageRoomCounts.length) {
     throw new Error("Stage room offset/count tables do not match");
@@ -100,11 +108,31 @@ export function parseGameData(source) {
     throw new Error("Guardian start tables do not match the room count");
   }
 
+  const wallSymbolLabels = ["CellWallAnkh", "CellWallEye", "CellWallScarab", "CellWallPyramid", "CellWallSun", "CellWallLotus"];
+  const wallSymbols = wallSymbolLabels.map(label => ({
+    name: label.slice("CellWall".length),
+    bitmap: numericFcbValues(source, label).map(byte => byte & 255),
+  }));
+  const decorationLabels = directiveEntries(source, "RoomWallDecorationPointers", "fdb");
+  const wallDecorations = decorationLabels.map(label => {
+    const bytes = numericFcbValues(source, label);
+    if (bytes.length !== 30) throw new Error(`${label} must contain ten decorations`);
+    return Array.from({ length: 10 }, (_, i) => {
+      const [x, y, symbol] = bytes.slice(i * 3, i * 3 + 3);
+      if (x < 0 || x >= WIDTH - 1 || y < 0 || y >= HEIGHT || symbol < 0 || symbol >= wallSymbols.length) {
+        throw new Error(`Invalid decoration in ${label}`);
+      }
+      return { x, y, symbol };
+    });
+  });
+  if (wallDecorations.length !== labels.length) throw new Error("Missing room wall decorations");
+
   const rooms = labels.map((label, index) => {
-    const identity = roomName(index, stageRoomOffsets, stageRoomCounts);
+    const identity = roomName(index, stageRoomOffsets, stageRoomCounts, chamberNames);
     const enemyOffset = index * ENEMY_SPAWN_COUNT;
     return {
       id: label,
+      wallDecorations: wallDecorations[index],
       ...identity,
       tiles: templateRows(source, label),
       start: { x: startX[index], y: startY[index] },
@@ -121,6 +149,13 @@ export function parseGameData(source) {
     width: WIDTH,
     height: HEIGHT,
     stageRoomCounts,
+    chamberNames,
+    doorSprites: ["Yellow", "Red"].map(name => ({
+      name,
+      bitmap: numericFcbValues(source, `CellDoor${name}`).map(byte => byte & 255),
+    })),
+    wallSymbols,
+
     rooms,
   };
   validateProjectShape(project, labels);

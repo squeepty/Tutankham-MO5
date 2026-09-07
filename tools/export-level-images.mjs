@@ -6,6 +6,8 @@ import process from "node:process";
 import zlib from "node:zlib";
 import { fileURLToPath } from "node:url";
 
+import { doorCells } from "./level-editor/public/room-art.mjs";
+
 import { parseGameData } from "./level-editor/lib/data-file.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -177,7 +179,12 @@ function renderRoom(room, patterns, widthInCells, heightInCells) {
     for (let x = 0; x < widthInCells; x += 1) {
       const tile = room.tiles[y][x];
       if (tile === "#") {
-        const pattern = patterns.get((x + y) % 2 === 0 ? "CellWallA" : "CellWallB");
+        const decoration = room.wallDecorations
+          ? room.wallDecorations.find(item => x >= item.x && x < item.x + 2 && item.y === y
+            && room.tiles[y][item.x] === "#" && room.tiles[y][item.x + 1] === "#") : undefined;
+        const pattern = decoration
+          ? project.wallSymbols[decoration.symbol].bitmap.slice((x - decoration.x) * 8, (x - decoration.x + 1) * 8)
+          : patterns.get((x + y) % 2 === 0 ? "CellWallA" : "CellWallB");
         drawPattern(pixels, width, pattern, x, y, wallColor);
         continue;
       }
@@ -186,6 +193,17 @@ function renderRoom(room, patterns, widthInCells, heightInCells) {
         drawPattern(pixels, width, patterns.get(patternName), x, y, rgb(tileColors.get(tile)));
       }
     }
+  }
+
+  for (const cell of doorCells(room, project.doorSprites)) {
+    const background = rgb(colors.background);
+    for (let py = 0; py < CELL_SIZE * SCALE; py += 1) {
+      for (let px = 0; px < CELL_SIZE * SCALE; px += 1) {
+        setPixel(pixels, width, cell.x * CELL_SIZE * SCALE + px,
+          cell.y * CELL_SIZE * SCALE + py, background);
+      }
+    }
+    drawPattern(pixels, width, cell.bitmap, cell.x, cell.y, rgb(cell.color));
   }
 
   drawPattern(

@@ -227,34 +227,90 @@ DrawMapCellAt:
         bra     DrawMapCell
 
 DrawMapCell:
+        jsr     TryDrawExitDoor
+        bcs     DrawMapCellDone
+        lda     MapDrawX
+        ldb     MapDrawY
         ; GetLevelTile returns the readable ASCII tile stored in LevelMap.
         jsr     GetLevelTile
 
         cmpa    #TILE_WALL
-        beq     DrawMapWall
+        lbeq    DrawMapWall
         cmpa    #TILE_EXIT
-        beq     DrawMapExit
+        lbeq    DrawMapExit
         cmpa    #TILE_KEY
-        beq     DrawMapKey
+        lbeq    DrawMapKey
         cmpa    #TILE_TREASURE
-        beq     DrawMapTreasure
+        lbeq    DrawMapTreasure
         cmpa    #TILE_SPAWN
-        beq     DrawMapSpawn
+        lbeq    DrawMapSpawn
         cmpa    #TILE_WARP_DOWN
-        beq     DrawMapWarp
+        lbeq    DrawMapWarp
         cmpa    #TILE_WARP_UP
-        beq     DrawMapWarp
+        lbeq    DrawMapWarp
         cmpa    #TILE_ROOM_EXIT
-        beq     DrawMapRoomExit
+        lbeq    DrawMapRoomExit
 
         lda     #COLOR_BACKGROUND
         sta     DrawCellColor
         ldu     #CellEmpty
-        bra     DrawMapTile
+        lbra    DrawMapTile
+
+DrawMapCellDone:
+        rts
 
 DrawMapWall:
         lda     CurrentWallColor
         sta     DrawCellColor
+        ldb     CurrentStageRoomIndex
+        lslb
+        ldx     #RoomWallDecorationPointers
+        ldx     b,x
+        ; Each room table has ten (X, Y, symbol) triples. Symbol artwork is
+        ; sixteen bytes: eight scanlines for each horizontal half.
+        ldb     #10
+DrawMapWallDecorationNext:
+        lda     MapDrawY
+        cmpa    1,x
+        bne     DrawMapWallDecorationSkip
+        lda     MapDrawX
+        suba    ,x
+        cmpa    #2
+        bhs     DrawMapWallDecorationSkip
+        ; Select this half, and require the neighboring half to remain a wall.
+        pshs    a
+        lsla
+        lsla
+        lsla
+        pshs    a
+        ldb     2,x
+        lslb
+        lslb
+        lslb
+        lslb
+        addb    ,s+
+        ldu     #WallSymbolPatterns
+        leau    b,u
+        puls    a
+        tsta
+        bne     DrawMapWallCheckLeft
+        lda     MapDrawX
+        inca
+        bra     DrawMapWallCheckNeighbor
+DrawMapWallCheckLeft:
+        lda     MapDrawX
+        deca
+DrawMapWallCheckNeighbor:
+        ldb     MapDrawY
+        jsr     GetLevelTile
+        cmpa    #TILE_WALL
+        beq     DrawMapTile
+        bra     DrawMapRegularWall
+DrawMapWallDecorationSkip:
+        leax    3,x
+        decb
+        bne     DrawMapWallDecorationNext
+DrawMapRegularWall:
         ldu     #CellWallA
         lda     MapDrawX
         eora    MapDrawY
@@ -304,3 +360,71 @@ DrawMapTile:
         ldb     MapTargetY
         addb    #LEVEL_SCREEN_ROW
         jmp     DrawCellPattern
+
+; Draw the cell immediately one or two columns right of a paired D marker.
+; Sampling each cell independently preserves clipping and diagonal redraws.
+; Returns carry set when drawn. Map targets remain unchanged.
+; GetLevelTile leaves X at the marker so +/- LEVEL_WIDTH checks its mate.
+; Quadrants are stored top-left, top-right, bottom-left, bottom-right.
+TryDrawExitDoor:
+        lda     MapDrawX
+        beq     TryDrawExitDoorNone
+        deca
+        ldb     MapDrawY
+        jsr     GetLevelTile
+        cmpa    #TILE_EXIT
+        beq     TryDrawExitDoorLeft
+        lda     MapDrawX
+        cmpa    #2
+        blo     TryDrawExitDoorNone
+        suba    #2
+        ldb     MapDrawY
+        jsr     GetLevelTile
+        cmpa    #TILE_EXIT
+        bne     TryDrawExitDoorNone
+        lda     #8
+        bra     TryDrawExitDoorPair
+TryDrawExitDoorLeft:
+        clra
+TryDrawExitDoorPair:
+        pshs    a
+        ; Logical terrain rows start on odd physical rows (1,3,...).
+        ldb     MapDrawY
+        bitb    #1
+        beq     TryDrawExitDoorBottom
+        cmpb    #LEVEL_HEIGHT-1
+        bhs     TryDrawExitDoorUnpaired
+        lda     LEVEL_WIDTH,x
+        bra     TryDrawExitDoorCheckPair
+TryDrawExitDoorBottom:
+        tstb
+        beq     TryDrawExitDoorUnpaired
+        lda     -LEVEL_WIDTH,x
+TryDrawExitDoorCheckPair:
+        cmpa    #TILE_EXIT
+        bne     TryDrawExitDoorUnpaired
+        puls    a
+        bitb    #1
+        bne     TryDrawExitDoorPattern
+        adda    #16
+TryDrawExitDoorPattern:
+        ldu     #CellDoorYellow
+        ldb     #COLOR_DOOR_YELLOW
+        pshs    a
+        lda     CurrentLevel
+        bita    #1
+        beq     TryDrawExitDoorColor
+        ldu     #CellDoorRed
+        ldb     #COLOR_DOOR_RED
+TryDrawExitDoorColor:
+        stb     DrawCellColor
+        puls    a
+        leau    a,u
+        jsr     DrawMapTile
+        orcc    #1
+        rts
+TryDrawExitDoorUnpaired:
+        leas    1,s
+TryDrawExitDoorNone:
+        andcc   #$FE
+        rts

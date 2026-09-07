@@ -21,10 +21,10 @@ test("parses all campaign rooms and actor metadata", () => {
   assert.equal(project.height, 22);
   assert.deepEqual(project.stageRoomCounts, [1, 2, 2, 2, 2, 3, 3, 3, 3]);
   assert.equal(project.rooms.length, 21);
-  assert.equal(project.rooms[0].name, "Stage 1, Room 1");
-  assert.equal(project.rooms[1].name, "Stage 2, Room 1");
-  assert.equal(project.rooms[7].name, "Stage 5, Room 1");
-  assert.equal(project.rooms[20].name, "Stage 9, Room 3");
+  assert.equal(project.rooms[0].name, "Chamber of Ra, Room 1");
+  assert.equal(project.rooms[1].name, "Chamber of Anubis, Room 1");
+  assert.equal(project.rooms[7].name, "Chamber of Sobek, Room 1");
+  assert.equal(project.rooms[20].name, "Chamber of Tutankhamun, Room 3");
   assert.deepEqual(project.rooms[0].start, { x: 1, y: 1 });
   assert.deepEqual(project.rooms[0].enemyStarts[0], { x: 16, y: 3 });
 });
@@ -54,4 +54,51 @@ test("rejects malformed editor projects", () => {
     () => validateProjectShape(project),
     /row 0 must be 30 cells wide/,
   );
+});
+
+test("chamber labels follow assembly source names", () => {
+  const renamed = source.replace('"CHAMBER OF RA"', '"CHAMBER OF ATEN"');
+  const project = parseGameData(renamed);
+  assert.equal(project.chamberNames.length, 9);
+  assert.equal(project.chamberNames[0], "Chamber of Aten");
+  assert.equal(project.rooms[0].name, "Chamber of Aten, Room 1");
+  assert.equal(serializeProject(renamed, project), renamed);
+});
+
+test("Each room has ten non-overlapping wall engravings using all six symbols", () => {
+  const project = parseGameData(source);
+  assert.equal(project.wallSymbols.length, 6);
+  assert.ok(project.wallSymbols.every(symbol => symbol.bitmap.length === 16));
+  for (const room of project.rooms) {
+    assert.equal(room.wallDecorations.length, 10);
+    const occupied = new Set();
+    for (const { x, y, symbol } of room.wallDecorations) {
+      assert.ok(symbol >= 0 && symbol < 6);
+      for (const dx of [0, 1]) {
+        assert.equal(room.tiles[y][x + dx], "#");
+        const key = `${x + dx},${y}`;
+        assert.ok(!occupied.has(key));
+        occupied.add(key);
+      }
+    }
+    assert.equal(new Set(room.wallDecorations.map(item => item.symbol)).size, 6);
+  }
+});
+
+test("door artwork provides four cells per color and current exits have room for artwork", () => {
+  const project = parseGameData(source);
+  assert.deepEqual(project.doorSprites.map(sprite => sprite.name), ["Yellow", "Red"]);
+  assert.ok(project.doorSprites.every(sprite => sprite.bitmap.length === 32));
+  const widths = new Set();
+  for (const room of project.rooms) {
+    for (let y = 1; y < project.height - 1; y += 2) {
+      for (let x = 0; x < project.width; x += 1) {
+        if (room.tiles[y][x] !== "D") continue;
+        assert.equal(room.tiles[y + 1][x], "D");
+        widths.add(Math.min(2, project.width - x - 1));
+      }
+    }
+  }
+  assert.ok(widths.size > 0);
+  assert.ok([...widths].every(width => width >= 1 && width <= 2));
 });

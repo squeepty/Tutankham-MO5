@@ -80,7 +80,7 @@ LOAD_END_DEC=$((0x$LOAD_START_HEX + BIN_SIZE - 1))
 LOAD_END_HEX=$(printf "%04X" "$LOAD_END_DEC")
 
 if [ "$LOAD_END_DEC" -ge $((0x9800)) ]; then
-    echo "error: binary crosses the initial stack guard at $9800." >&2
+    echo 'error: binary crosses the initial stack guard at $9800.' >&2
     exit 1
 fi
 

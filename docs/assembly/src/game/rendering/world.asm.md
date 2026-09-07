@@ -73,3 +73,24 @@ they balance `S`, preserve `DP`, and return with the bitmap plane selected.
 - Anti-diagonal traversal creates a wipe without a framebuffer copy.
 - A compare chain is appropriate for this small tile alphabet; a jump table
   would require careful range normalization and indirect-call conventions.
+
+## Wall engravings and stage-door overlays
+
+`DrawMapCell` first calls `TryDrawExitDoor`. It returns carry set after drawing
+one door quadrant; otherwise the ordinary tile dispatch continues. The helper
+checks one and two cells to the left for a paired `D`, derives the top/bottom
+half from the odd/even physical row, and selects the stage's yellow/red palette.
+Only cells visited inside the map are rendered, so a boundary door clips to
+its left leaf. Source `D` markers retain their interaction and collision rules.
+
+Wall cells consult `RoomWallDecorationPointers[CurrentStageRoomIndex]` for ten
+X/Y/symbol triples. A match chooses one eight-byte half of a 16×8 engraving
+only when its neighboring half is still a wall. Otherwise the normal alternating
+stone pattern is used. Six designs occupy 96 bytes; placement tables use 30
+bytes per room plus pointers. Rendering adds no map tile IDs or collision state.
+
+`GetLevelTile` clobbers A/B/X. Door probing reloads the original MapDrawX/Y
+before ordinary dispatch; MapTargetX/Y remain the final drawing destination.
+Both overlay paths are shared by full-room draws, diagonal wipes, and actor
+background restoration, preventing decorative pixels from disappearing when
+an actor passes over them.
