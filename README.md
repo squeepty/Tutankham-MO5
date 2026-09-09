@@ -2,6 +2,8 @@
 
 Release 1
 
+download: https://squeepty.itch.io/tutankham-mo5
+
 This is a clean-room recreation for the Thomson MO5. It takes design inspiration
 from the original arcade game's rhythm and event structure, while using original
 source code, MO5 pixel artwork, and sound synthesis. The opening maps adapt
